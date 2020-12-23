@@ -46,23 +46,7 @@ dat.all <- tmp[sortedDateIndex, ]
 # Add day of the week
 dat.all$weekDay <- weekdays(as.Date(dat.all$date))
 
-
-# Function to compute a sliding window average
-sliding.ave <- function(v, winwdt = 7, pos = 4, na.rm = TRUE){
-  # v vector to be averaged
-  # winwdt width of the window 
-  # pos position of the focal day in the window
-  n <- length(v)
-  # Initialize output vector
-  out <- 0 * v + (-1)
-  out[1:(pos-1)] <- NA
-  out[(n + 1 - winwdt + pos) : n] <- NA
-  
-  for(i in pos : (n - winwdt + pos)){
-    out[i] <- mean(v[(i - pos + 1):(i + winwdt - pos)], na.rm = na.rm)
-  }
-  return(out[1:n])
-}
+source("commonFuncs.R")
 
 # Compute the average values, 1-week window, focal point in the middle
 dat.all$diffRegisterPerDay.WeekAve <- sliding.ave(dat.all$diffRegisterPerDay)
@@ -71,13 +55,7 @@ dat.all$diffNotifPerDay.WeekAve <- sliding.ave(dat.all$diffNotifPerDay)
 
 # PLOTTING
 # Colors
-library(RColorBrewer)
-cols <- brewer.pal(n = 7, name = "Set2")
-plot(1:7, pch = 16, col = cols)
-names(cols) <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
-
-par(las = 1)
-
+source("commonPlot.R")
 plot(as.Date(dat.all$date), dat.all$register, 
      xlab = "date", 
      ylab = "Registrations", 
@@ -132,13 +110,67 @@ plot(as.Date(dat.all$date), ((c(dat.all$diffNotifPerDay.WeekAve, NA) / c(NA, dat
      ylab = "Notifications par QR code (moy 7, décalage 1) / Enregistrements totaux nets par hab")
 
 
+
+# Key dates
+# 22 octobre sortie TAC
+# 30 octobre confinement 2
+# fin nov campagne pub (Dec 1?)
+# 17 oct couvre feu
+
+# Source epidemic data and merge with TAC data
+# Using JHU data because they are in terms of reporting date, and not test date
+# because we expect the QR code to be scanned when the test result is received
+dat.all$date <- as.Date(dat.all$date)
+source("epidemicData.R")
+dat.withEpi <- merge(dat.all, datJHUFr, by = "date")
+names(dat.withEpi)[9] <- "weekDay"
+
+
+plot(dat.withEpi$date, dat.withEpi$P.WeekAve, log = "y", ylim = c(1, max(dat.withEpi$P.WeekAve, na.rm = TRUE)))
+points(dat.withEpi$date, dat.withEpi$diffQRPerDay.WeekAve)
+
+plot(dat.withEpi$date, dat.withEpi$diffQRPerDay.WeekAve / dat.withEpi$P.WeekAve, 
+     xlab = "date", ylab = "QRcode / cas du jour (moy 7j)", 
+     ylim = c(0, 0.1))
+
+# Estimation de la fraction d'utilisateurs réellement actifs
+plot(dat.withEpi$date, dat.withEpi$diffQRPerDay.WeekAve / dat.withEpi$P.WeekAve, 
+     xlab = "date", ylab = "QRcode / cas du jour (moy 7j)")
+
+propUtil <- sliding.ave(dat.withEpi$register, winwdt = 7, pos = 4) / popFR
+
+propUtilActif <- dat.withEpi$diffQRPerDay.WeekAve / dat.withEpi$P.WeekAve
+
+plot(dat.withEpi$date, propUtilActif, 
+     xlab = "date", ylab = "Proportions d'utilisateurs (moy 7j)", ylim = c(0, 0.2), 
+     pch = 16, col = rgb(0.4, 0.7, 0))
+points(dat.withEpi$date, propUtil, pch = 16, col = gray(0.4))
+legend(as.Date("2020-07-01"), 0.15, col = c(gray(0.4), rgb(0.4, 0.7, 0)), pch = 16, 
+       legend = c("Prop. enregistrés", "Prop. utilisateurs actifs"), 
+       box.lwd = 0)
+axis(4)
+
+notifPerQR <- dat.all$diffNotifPerDay / c(NA, dat.all$diffQRPerDay[ - nrow(dat.all)])
+notifPerQR.WeekAve <- dat.all$diffNotifPerDay.WeekAve / c(NA, dat.all$diffQRPerDay.WeekAve[ - nrow(dat.all)])
+
+plot(dat.all$date, notifPerQR)
+plot(dat.all$date, notifPerQR.WeekAve)
+
+plot(dat.all$date, notifPerQR / propUtil)
+plot(dat.all$date, notifPerQR / propUtilActif)
+
+
+plot(dat.all$date, notifPerQR.WeekAve / propUtil)
+plot(dat.all$date, notifPerQR.WeekAve / propUtilActif)
+
+
 # Notifs per QRcode, divided by average proportion users the last 7 days
 plot(as.Date(dat.all$date), ((c(dat.all$diffNotifPerDay, NA) / c(NA, dat.all$diffQRPerDay)) / (c(NA, sliding.ave(dat.all$register, winwdt = 15, pos = 15))/popFR))[-1], 
      xlab = "date", 
      ylab = "Notifications par QR code (décalage 1) / Enregistrements totaux nets par hab", ylim = c(0, 15), 
      pch = 16, col = rgb(0.7, 0, 0), 
      type = "n"
-     )
+)
 arrows(x0 = as.Date("2020-10-22"), 13, y1 = 11, length = 0.1)
 text(x = as.Date("2020-10-22"), y = 13, "StopCovid devient \nTousAntiCovid", adj = c(0.5, -0.5))
 
@@ -157,10 +189,6 @@ for(i in c(0, 5, 10, 15)){
 }
 
 points(as.Date(dat.all$date), ((c(dat.all$diffNotifPerDay, NA) / c(NA, dat.all$diffQRPerDay)) / (c(NA, sliding.ave(dat.all$register, winwdt = 7, pos = 7))/popFR))[-1], 
-     pch = 16, col = rgb(0.7, 0, 0))
+       pch = 16, col = rgb(0.7, 0, 0))
 
-# Key dates
-# 22 octobre sortie TAC
-# 30 octobre confinement 2
-# fin nov campagne pub (Dec 1?)
-# 17 oct couvre feu
+

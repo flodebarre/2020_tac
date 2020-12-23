@@ -1,0 +1,295 @@
+---
+title: "TousAntiCovid"
+author: "FD"
+date: "2020-12-23"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(global.par = TRUE)
+```
+
+# Data
+
+-  TousAntiCovid: [open data, official source](https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/)
+-  Epidemic data: [JHU data](https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series), because recorded as function of date of the result's announcement. 
+
+
+```{r, results="hide"}
+# Load and format data
+
+# 1) TAC
+# Data Source : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/
+# URL of the data on data.gouv.fr
+URL <- "https://www.data.gouv.fr/fr/datasets/r/0e2168ec-24c7-4b49-a900-c7dd12f8e88c"
+
+# Download and read data
+today <- Sys.Date() # today's date
+dataFile <- paste0("data/TAC_", today, ".csv") # name file with today's date
+download.file(URL, dataFile) # download file from repo
+dat <- read.csv(dataFile)
+
+## Description from the website (2020-12-23)
+## Le présent jeu de données informe pour chaque jour depuis le lancement de l'application le 2 juin 2020 :
+##
+## Total cumulé du nombre d'applications enregistrées moins le nombre de désenregistrements.
+## Total cumulé d’utilisateurs notifiés par l’application : le nombre d’utilisateurs notifiés par l’application comme contacts à risque suite à une exposition à la COVID-19, depuis le 2 juin 2020.
+## Total cumulé d’utilisateurs se déclarant comme des cas de COVID-19 par jour : le nombre d’utilisateurs qui se sont déclarés comme des cas de COVID-19 dans l’application, depuis le 2 juin 2020.
+
+# Check data
+# Time differences between dates
+unique(diff(as.Date(dat$date))) # -> there are some gaps in the data
+
+# New columns with delta between dates
+dat$diffDate <- c(NA, diff(as.Date(dat$date))) # Difference in days between data points
+# for the other columns, divide by the time difference to have differences per day
+# (otherwise data not comparable when different time differences)
+dat$diffRegisterPerDay <- c(NA, diff(dat$register) / dat$diffDate[-1]) 
+dat$diffQRPerDay <- c(NA, diff(dat$qrCode) / dat$diffDate[-1])
+dat$diffNotifPerDay <- c(NA, diff(dat$notified) / dat$diffDate[-1])
+
+# Create new dataset without gaps in the dates
+# New dates, without gaps
+rangeDates <- range(as.Date(dat$date))
+allDates <- seq(rangeDates[1], rangeDates[2], by="days")
+dat.temp <- as.data.frame(as.character(allDates))
+names(dat.temp) <- "date"
+
+# Merge the datasets by date 
+tmp <- merge(dat, dat.temp, by = "date", all = TRUE)
+# note: this adds NA at the dates where there were no data; 
+# these dates are put at the end of the table
+
+# Sort the new dataset by date
+sortedDateIndex <- sort(as.character(tmp$date), index.return = TRUE)$ix
+dat.all <- tmp[sortedDateIndex, ]
+
+# Add day of the week
+dat.all$weekDay <- weekdays(as.Date(dat.all$date))
+
+# Load function to compute sliding average
+source("commonFuncs.R")
+
+# Remove negative values
+dat.all$diffNotifPerDay[dat.all$diffNotifPerDay < 0 ] <- NA
+
+# Compute the average values, 1-week window, focal point in the middle
+dat.all$diffRegisterPerDay.WeekAve <- sliding.ave(dat.all$diffRegisterPerDay)
+dat.all$diffQRPerDay.WeekAve <- sliding.ave(dat.all$diffQRPerDay)
+dat.all$diffNotifPerDay.WeekAve <- sliding.ave(dat.all$diffNotifPerDay)
+dat.all$register.WeekAve <- sliding.ave(dat.all$register)
+dat.all$date <- as.Date(dat.all$date)
+
+```
+
+```{r}
+# 2) Data from JHU
+# The date in these data is the date of the result's annoucement
+URL <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"
+# Download and read data
+dataFile <- paste0("data/JHU_cases_all_", today, ".csv") # name file with today's date
+download.file(URL, dataFile) # download file from repo
+datJHU <- read.csv(dataFile, header = TRUE, check.names = FALSE)
+# Extract data about France
+datJHU.France <- datJHU[datJHU$`Country/Region` == "France", ]
+
+# Collapse data for all France (including DOM TOM)
+datJHU.France.agg <- apply(datJHU.France[, -(1:4)], 2, sum)
+# Need to reformat the data: have one column for dates and one column for values
+datJHUFr <- data.frame(matrix(0, ncol = 2, nrow = length(datJHU.France.agg)))
+datJHUFr$date <- as.Date(names(datJHU.France.agg), format = "%m/%d/%y")
+datJHUFr$cumP <- unname(datJHU.France.agg)
+datJHUFr <- datJHUFr[, -(1:2)]
+# Get week day
+datJHUFr$weekDay <- weekdays(as.Date(datJHUFr$date))
+# Extract data per day (JHU provides cumulative values)
+datJHUFr$P <- c(datJHUFr[1, "cumP"], diff(datJHUFr$cumP))
+# Add the sliding window value to the JHU data
+datJHUFr$P.WeekAve <- sliding.ave(datJHUFr$P, winwdt = 7, pos = 4, na.rm = TRUE)
+```
+
+```{r}
+# Merge the datasets
+dat.withEpi <- merge(dat.all, datJHUFr, by = "date")
+names(dat.withEpi)[9] <- "weekDay"
+```
+
+
+# Plots
+
+```{r, results="hide", fig.show="hide"}
+# Load plot settings
+source("commonPlot.R")
+```
+
+## TAC, registrations
+
+### Number of registered users, over time
+
+```{r}
+plot(as.Date(dat.all$date), dat.all$register, 
+     xlab = "date", 
+     ylab = "Registrations", 
+     pch = 16, col = cols[dat.all$weekDay])
+```
+
+### Changes in number of registered users, per day  
+(NB: when there is a gap in the data, the difference in number of users is divided by the length of the time gap)  
+```{r}
+
+plot(as.Date(dat.all$date), dat.all$diffRegisterPerDay, log = "",      
+     xlab = "date", 
+     ylab = "delta registrations per day", 
+     pch = 16, col = cols[dat.all$weekDay], 
+     ylim = c(1, 7*10^5))
+legend(as.Date("2020-07-01"), y = 500000, legend = names(cols), col = cols, pch = 16, box.lwd = 0)
+abline(v = as.Date("2020-10-22"))
+
+```
+
+The vertical line corresponds to the switch from StopCovid to TousAntiCovid. 
+There was an advertisement campaign by the end of November/beginning of December, with SMS sent to the population. 
+
+## TAC, QRcodes
+
+### QR codes scanned every day
+
+```{r}
+plot(as.Date(dat.all$date), dat.all$diffQRPerDay, log = "",      
+     xlab = "date", 
+     ylab = "delta QR per day", 
+     pch = 16, col = cols[dat.all$weekDay])
+legend(as.Date("2020-07-01"), y = 2000, legend = names(cols), col = cols, pch = 16, box.lwd = 0)
+```
+
+The minima are on Sundays
+
+## TAC, notifications
+
+### Notifications sent every day  
+```{r}
+plot(as.Date(dat.all$date), dat.all$diffNotifPerDay, log = "",      
+     xlab = "date", 
+     ylab = "delta notifications per day", 
+     pch = 16, col = cols[dat.all$weekDay])
+legend(as.Date("2020-07-01"), y = 1000, legend = names(cols), col = cols, pch = 16, box.lwd = 0)
+```
+
+The minima are on Mondays  
+-> There seems to be a one-day difference between scanned QR codes and notifications sent. 
+This was already noticed by F. Lesueur [here](https://flesueur.medium.com/réalignement-temporel-des-chiffres-tousanticovid-covid-7bda2f0bf1c1). 
+
+### Notifications per QR code
+
+1) same day   
+```{r}
+plot(as.Date(dat.all$date), dat.all$diffNotifPerDay / dat.all$diffQRPerDay, log = "",      
+     xlab = "date", 
+     ylab = "notifs per QRcode", 
+     pch = 16, col = cols[dat.all$weekDay], main = "raw data, same day")
+```
+
+2) one-day difference
+```{r}
+plot(as.Date(dat.all$date), dat.all$diffNotifPerDay / (c(NA, dat.all$diffQRPerDay[-nrow(dat.all)])), log = "",      
+     xlab = "date", 
+     ylab = "notifs per QR code", 
+     pch = 16, col = cols[dat.all$weekDay], main = "raw data, one-day delay in notifications")
+```
+
+
+1) same day, 7-day average   
+```{r}
+plot(as.Date(dat.all$date), dat.all$diffNotifPerDay.WeekAve / dat.all$diffQRPerDay.WeekAve, log = "",      
+     xlab = "date", 
+     ylab = "notifs per QRcode", 
+     pch = 16, col = cols[dat.all$weekDay], main = "7-day ave, same day")
+```
+
+2) one-day difference, 7-day average
+```{r}
+plot(as.Date(dat.all$date), dat.all$diffNotifPerDay.WeekAve / (c(NA, dat.all$diffQRPerDay.WeekAve[-nrow(dat.all)])), log = "",      
+     xlab = "date", 
+     ylab = "notifs per QR code", 
+     pch = 16, col = cols[dat.all$weekDay], main = "7-day ave, one-day delay in notifications")
+```
+
+
+## Active users
+
+Not all users are active; some people have downloaded the app but do not turn on bluetooth; some may just have downloaded the app for their "attestations".  
+To estimate the number of active users, we will compare the proportion of registered users in the whole population to the proportion of scanned QR codes among positive test results. 
+
+```{r}
+# Approximate size of the French population
+popFR <- 67*10^6
+
+propUtil.Raw <- dat.withEpi$register / popFR
+propUtil <- dat.withEpi$register.WeekAve / popFR
+
+propUtilActif <- dat.withEpi$diffQRPerDay.WeekAve / dat.withEpi$P.WeekAve
+
+colActif <- rgb(0.4, 0.7, 0)
+colRegis <- gray(0.4)
+plot(dat.withEpi$date, propUtilActif, 
+     xlab = "date", ylab = "Proportions d'utilisateurs (moy 7j)", ylim = c(0, 0.2), 
+     pch = 16, col = colActif)
+points(dat.withEpi$date, propUtil.Raw, pch = 16, col = colRegis)
+legend(as.Date("2020-07-01"), 0.15, col = c(gray(0.4), rgb(0.4, 0.7, 0)), pch = 16, 
+       legend = c("Prop. enregistrés (brut)", "Prop. utilisateurs actifs (moy 7j)"), 
+       box.lwd = 0)
+abline(v = as.Date("2020-10-22"))
+```
+
+## App settings
+
+We want to see if the conditions to detect a contact have changed over time. If the app remains the same, the proportion of notified cases per QRcode should be a constant multiple of the proportion of app users. 
+Notifications are sent to contacts of the 14? last days (maybe with decreasing proportion when the contact is older). 
+
+
+```{r, fig.height=7}
+notifsPerQR.raw.decalage <- dat.all$diffNotifPerDay / (c(NA, dat.all$diffQRPerDay[-nrow(dat.all)]))
+
+# Choice of the function over which cases are averaged
+aveprop <- function(x){
+  sliding.ave(x, winwdt = 7, pos = 7)
+}
+
+plot(as.Date(dat.all$date), notifsPerQR.raw.decalage / aveprop(propUtilActif),       
+     xlab = "date", 
+     ylab = "notifs per QRcode / prop. users", 
+     pch = 16, col = colActif, main = "detected contacts per user", type = "n")
+
+for(i in 0:65){
+  abline(h = i, col = gray(0.8))
+}
+for(i in seq(0, 65, by = 5)){
+  abline(h = i, col = gray(0.8), lwd = 2)
+}
+
+legend(as.Date("2020-07-01"), 35, col = c("white", colActif, colRegis, "white"), pch = 16, 
+       legend = c("prop. users = ", "proportion d'utilisateurs actifs", "proportion d'utilisateurs enregistrés", "moyens sur les 7 derniers jours"), 
+       box.lwd = 0)
+
+dy <- 2
+yo <- 30
+arrows(x0 = as.Date("2020-10-22"), yo, y1 = yo-dy, length = 0.1)
+text(x = as.Date("2020-10-22"), y = yo, "StopCovid devient \nTousAntiCovid", adj = c(0.5, -0.5))
+
+yo <- yo + 3
+arrows(x0 = as.Date("2020-11-28"), yo, y1 = yo-dy, length = 0.1)
+text(x = as.Date("2020-11-28"), y = yo, "Changement critères \n pour notification", adj = c(0.5, -0.5))
+
+points(as.Date(dat.all$date), notifsPerQR.raw.decalage/aveprop(propUtilActif), pch = 16, col = colActif)
+
+points(as.Date(dat.all$date), notifsPerQR.raw.decalage/aveprop(propUtil.Raw), col = colRegis, pch = 16)
+
+
+
+```
+
