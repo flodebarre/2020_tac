@@ -1,3 +1,8 @@
+##
+## Moved to .Rmd
+## not updated anymore
+##
+
 # Data Source : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/
 # URL of the data on data.gouv.fr
 URL <- "https://www.data.gouv.fr/fr/datasets/r/0e2168ec-24c7-4b49-a900-c7dd12f8e88c"

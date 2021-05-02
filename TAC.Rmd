@@ -1,12 +1,12 @@
 ---
 title: "TousAntiCovid"
 author: "FD"
-date: "2020-12-23"
 output: 
   html_document:
     code_folding: hide
     toc: true
     toc_float: true
+    self_contained: no
 ---
 
 ```{r setup, include=FALSE}
@@ -114,9 +114,53 @@ datJHUFr$P.WeekAve <- sliding.ave(datJHUFr$P, winwdt = 7, pos = 4, na.rm = TRUE)
 ```
 
 ```{r}
+# 3) French data from data.gouv.fr, which JHU uses as source
+URL <- "https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71"
+# Download and read data
+dataFile <- paste0("data/FR_cases_all_", today, ".csv") # name file with today's date
+download.file(URL, dataFile) # download file from repo
+datFR <- read.csv(dataFile, header = TRUE, check.names = FALSE)
+datFR$date <- as.Date(datFR$date)
+
+# Get week day
+datFR$weekDay <- weekdays(as.Date(datFR$date))
+# Extract data per day (JHU provides cumulative values)
+datFR$P <- c(datFR[1, "total_cas_confirmes"], diff(datFR$total_cas_confirmes))
+# Add the sliding window value to the JHU data
+datFR$P.WeekAve <- sliding.ave(datFR$P, winwdt = 7, pos = 4, na.rm = TRUE)
+
+```
+
+
+```{r}
 # Merge the datasets
-dat.withEpi <- merge(dat.all, datJHUFr, by = "date")
+dat.withEpi <- merge(dat.all, datFR, by = "date")
 names(dat.withEpi)[9] <- "weekDay"
+```
+
+
+Données TAC jusqu'au `r format(max(dat.all$date), "%a %d %b %Y")` (inclus)   
+Données épidémio (JHU) jusqu'au `r format(max(datJHUFr$date), "%a %d %b %Y")` (inclus).
+Données épidémio (data.gouv.fr) jusqu'au `r format(max(as.Date(datFR$date)), "%a %d %b %Y")` (inclus).
+
+
+## Quelques dates clés
+
+- StopCovid est devenu TousAntiCovid vers le 22 octobre 2020 https://www.gouvernement.fr/partage/11818-conference-de-presse-sur-l-application-des-mesures-contre-la-covid-19
+```{r  include = FALSE}
+date_TAC <- "2020-10-22"
+```
+
+- Une campagne de publicité a été lancée à la fin novembre / début décembre 2020 (avec envoi de SMS à la population)  
+
+- Les critères de détection de contact ont changé le 27-28 novembre 2020 (changement distance et durée). [Source](https://www.service-public.fr/particuliers/actualites/A14486)  
+```{r  include = FALSE}
+date_criteres <- "2020-11-28"
+```
+
+- A partir du 16 décembre 2020, le QR code est plus facile à obtenir (envoi SMS). [Source](https://twitter.com/TousAntiCovid/status/1349013051387871235?s=20).
+```{r  include = FALSE}
+date_sms <- "2020-12-16"
 ```
 
 
@@ -141,12 +185,12 @@ plot(as.Date(dat.all$date), dat.all$register,
 ### Changes in number of registered users, per day  
 (NB: when there is a gap in the data, the difference in number of users is divided by the length of the time gap)  
 ```{r}
-
 plot(as.Date(dat.all$date), dat.all$diffRegisterPerDay, log = "",      
      xlab = "date", 
      ylab = "delta registrations per day", 
      pch = 16, col = cols[dat.all$weekDay], 
-     ylim = c(1, 7*10^5))
+     ylim = c(1, 7*10^5), 
+     yaxs = "i")
 legend(as.Date("2020-07-01"), y = 500000, legend = names(cols), col = cols, pch = 16, box.lwd = 0)
 abline(v = as.Date("2020-10-22"))
 
@@ -164,7 +208,8 @@ plot(as.Date(dat.all$date), dat.all$diffQRPerDay, log = "",
      xlab = "date", 
      ylab = "delta QR per day", 
      pch = 16, col = cols[dat.all$weekDay])
-legend(as.Date("2020-07-01"), y = 2000, legend = names(cols), col = cols, pch = 16, box.lwd = 0)
+lines(dat.all$date, dat.all$diffQRPerDay.WeekAve, col = colAve)
+legend(as.Date("2020-07-01"), y = 2000, legend = c(names(cols),  "7-day average"), col = c(cols, colAve), pch = c(rep(16, 7), -1), box.lwd = 0, lwd = c(rep(0, 7), 1))
 ```
 
 The minima are on Sundays
@@ -177,7 +222,10 @@ plot(as.Date(dat.all$date), dat.all$diffNotifPerDay, log = "",
      xlab = "date", 
      ylab = "delta notifications per day", 
      pch = 16, col = cols[dat.all$weekDay])
-legend(as.Date("2020-07-01"), y = 1000, legend = names(cols), col = cols, pch = 16, box.lwd = 0)
+
+lines(dat.all$date, dat.all$diffNotifPerDay.WeekAve, col = colAve)
+
+legend(as.Date("2020-07-01"), y = 1000, legend = c(names(cols),  "7-day average"), col = c(cols, colAve), pch = c(rep(16, 7), -1), box.lwd = 0, lwd = c(rep(0, 7), 1))
 ```
 
 The minima are on Mondays  
@@ -203,7 +251,7 @@ plot(as.Date(dat.all$date), dat.all$diffNotifPerDay / (c(NA, dat.all$diffQRPerDa
 ```
 
 
-1) same day, 7-day average   
+3) same day, 7-day average   
 ```{r}
 plot(as.Date(dat.all$date), dat.all$diffNotifPerDay.WeekAve / dat.all$diffQRPerDay.WeekAve, log = "",      
      xlab = "date", 
@@ -211,14 +259,53 @@ plot(as.Date(dat.all$date), dat.all$diffNotifPerDay.WeekAve / dat.all$diffQRPerD
      pch = 16, col = cols[dat.all$weekDay], main = "7-day ave, same day")
 ```
 
-2) one-day difference, 7-day average
+4) one-day difference, 7-day average
 ```{r}
+par(mar = rep(5, 4))
+colNotifsCas <- "#045a8d"
 plot(as.Date(dat.all$date), dat.all$diffNotifPerDay.WeekAve / (c(NA, dat.all$diffQRPerDay.WeekAve[-nrow(dat.all)])), log = "",      
-     xlab = "date", 
-     ylab = "notifs per QR code", 
-     pch = 16, col = cols[dat.all$weekDay], main = "7-day ave, one-day delay in notifications")
+     xlab = "", 
+     ylab = "nb de notifs par QR code", 
+     pch = 16, col = colNotifsCas, 
+     yaxs = "i", frame.plot = FALSE)
+
+title("Nb notifications par QR code, moy. 7j", line = 2.5)
+
+# Annotate with dates
+abline(v = as.Date(date_TAC), lty = 2)
+abline(v = as.Date(date_sms), lty = 2)
+abline(v = as.Date(date_criteres), lty = 2)
+cexAnnotate <- 0.8
+mtext("StopCovid -> 
+TousAntiCovid", side = 3, at = as.Date(date_TAC), adj = 1, cex = cexAnnotate)
+
+mtext("envoi SMS pour 
+QR code", side = 3, at = as.Date(date_sms), adj = 0, cex = cexAnnotate)
+
+mtext("nvx criteres
+detection", side = 3, at = as.Date(date_criteres), adj = 0.7, cex = cexAnnotate)
+
+mtext("Date", side = 1, line = 1.5)
+
+for(i in seq(0.5, 1.5, by = 0.5)){
+  abline(h = i, lty = 1, col = gray(0.8), lwd = 0.4)
+}
+mtext(paste0("Mise à jour : ", Sys.Date(), "
+Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC"), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0, )
+
+axis(4)
 ```
 
+## Epidemic data
+
+JHU data, date is date at which result was communicated (and not sampling date).
+
+```{r}
+plot(dat.withEpi$date, dat.withEpi$P, col = cols[dat.withEpi$weekDay], pch = 16, 
+     xlab = "date", ylab = "nb of cases")
+lines(dat.withEpi$date, dat.withEpi$P.WeekAve, col = colAve)
+legend(as.Date("2020-07-01"), y = 65000, legend = c(names(cols),  "7-day average"), col = c(cols, colAve), pch = c(rep(16, 7), -1), box.lwd = 0, lwd = c(rep(0, 7), 1))
+```
 
 ## Active users
 
@@ -226,24 +313,61 @@ Not all users are active; some people have downloaded the app but do not turn on
 To estimate the number of active users, we will compare the proportion of registered users in the whole population to the proportion of scanned QR codes among positive test results. 
 
 ```{r}
+par(xpd = TRUE)
 # Approximate size of the French population
+par(mar = c(5, 5, 5, 5))
+par(mgp = c(3, 0.75, 0))
 popFR <- 67*10^6
 
+# Registered users, as fraction of the total popuation
 propUtil.Raw <- dat.withEpi$register / popFR
 propUtil <- dat.withEpi$register.WeekAve / popFR
 
+# Active users, averaged over a week
 propUtilActif <- dat.withEpi$diffQRPerDay.WeekAve / dat.withEpi$P.WeekAve
 
 colActif <- rgb(0.4, 0.7, 0)
 colRegis <- gray(0.4)
+cexPoints <- 0.8 # Size of the dots
+ymax <- ceiling(10*max(propUtil.Raw, na.rm = TRUE))/10
+
 plot(dat.withEpi$date, propUtilActif, 
-     xlab = "date", ylab = "Proportions d'utilisateurs (moy 7j)", ylim = c(0, 0.2), 
-     pch = 16, col = colActif)
-points(dat.withEpi$date, propUtil.Raw, pch = 16, col = colRegis)
-legend(as.Date("2020-07-01"), 0.15, col = c(gray(0.4), rgb(0.4, 0.7, 0)), pch = 16, 
-       legend = c("Prop. enregistrés (brut)", "Prop. utilisateurs actifs (moy 7j)"), 
-       box.lwd = 0)
-abline(v = as.Date("2020-10-22"))
+     xlab = "", ylab = "Proportions d'utilisateurs", ylim = c(0, ymax), 
+     pch = 16, col = colActif, 
+       main = "Fraction de la population utilisant TAC", 
+     yaxs = "i", frame.plot = FALSE, cex = cexPoints)
+mtext("Date", side = 1, line = 1.5)
+
+# Add horizontal lines to read the values
+par(xpd = FALSE)
+for(i in seq(0.05, ymax, by = 0.05)){
+  abline(h = i, lty = 1, col = gray(0.8), lwd = 0.4)
+}
+
+# Add points for raw users
+points(dat.withEpi$date, propUtil.Raw, pch = 16, col = colRegis, cex = cexPoints)
+
+legend("topleft", col = c(gray(0.4), rgb(0.4, 0.7, 0)), pch = 16, 
+       legend = c("Enregistrés (brut)", "Actifs (moy. 7j)"), 
+       bty = "o", pt.cex = cexPoints, box.lwd = 0)
+
+axis(4)
+par(xpd = FALSE)
+
+# Annotate with dates
+abline(v = as.Date(date_TAC), lty = 2)
+abline(v = as.Date(date_sms), lty = 2)
+cexAnnotate <- 0.8
+dx <- 0.3
+mtext("StopCovid -> 
+TousAntiCovid", side = 3, at = as.Date(date_TAC), adj = 1-dx, cex = cexAnnotate)
+
+mtext("envoi SMS pour 
+QR code", side = 3, at = as.Date(date_sms), adj = dx, cex = cexAnnotate)
+
+mtext(paste0("Mise à jour : ", Sys.Date(), "
+Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC, 
+https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series pour nb cas en date d'annonce"), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)
 ```
 
 ## App settings
@@ -252,44 +376,74 @@ We want to see if the conditions to detect a contact have changed over time. If 
 Notifications are sent to contacts of the 14? last days (maybe with decreasing proportion when the contact is older). 
 
 
-```{r, fig.height=7}
+```{r}
+par(mar = rep(5, 4))
+# Notifications per QR code, 1-day delay, raw
 notifsPerQR.raw.decalage <- dat.all$diffNotifPerDay / (c(NA, dat.all$diffQRPerDay[-nrow(dat.all)]))
 
-# Choice of the function over which cases are averaged
-aveprop <- function(x){
-  sliding.ave(x, winwdt = 7, pos = 7)
+# Choice of the function over which cases are counted
+prop.util <- function(x){
+  sliding.fun(x, FUN = max, winwdt = 7, pos = 7)
 }
 
-plot(as.Date(dat.all$date), notifsPerQR.raw.decalage / aveprop(propUtilActif),       
-     xlab = "date", 
-     ylab = "notifs per QRcode / prop. users", 
-     pch = 16, col = colActif, main = "detected contacts per user", type = "n")
+plot(as.Date(dat.all$date), notifsPerQR.raw.decalage / prop.util(propUtilActif),       
+     xlab = "", 
+     ylab = "Notif. par QR code / max(Prop. utilisateurs 7 derniers j.)", 
+     pch = 16, col = colActif, main = "", type = "n", 
+     yaxs = "i", 
+     frame.plot = FALSE)
 
-for(i in 0:65){
-  abline(h = i, col = gray(0.8))
-}
+title("Nb contacts détectés par utilisateur", line = 3)
+mtext("(Estimation du nb notifs/QRcode si 100% utilisateurs)", line = 2, side = 3, cex = 0.8)
+# Grid lines
+# for(i in 0:65){
+#   abline(h = i, col = gray(0.8))
+# }
+# for(i in seq(0, 65, by = 5)){
+#   abline(h = i, col = gray(0.8), lwd = 2)
+# }
 for(i in seq(0, 65, by = 5)){
-  abline(h = i, col = gray(0.8), lwd = 2)
+  abline(h = i, lty = 1, col = gray(0.8), lwd = 0.4)
 }
 
-legend(as.Date("2020-07-01"), 35, col = c("white", colActif, colRegis, "white"), pch = 16, 
-       legend = c("prop. users = ", "proportion d'utilisateurs actifs", "proportion d'utilisateurs enregistrés", "moyens sur les 7 derniers jours"), 
+axis(4)
+
+
+
+# Annotate with dates
+abline(v = as.Date(date_TAC), lty = 2)
+abline(v = as.Date(date_sms), lty = 2)
+abline(v = as.Date(date_criteres), lty = 2)
+cexAnnotate <- 0.8
+mtext("StopCovid -> 
+TousAntiCovid", side = 3, at = as.Date(date_TAC), adj = 1, cex = cexAnnotate)
+
+mtext("envoi SMS pour 
+QR code", side = 3, at = as.Date(date_sms), adj = 0, cex = cexAnnotate)
+
+mtext("nvx criteres
+detection", side = 3, at = as.Date(date_criteres), adj = 0.7, cex = cexAnnotate)
+
+
+
+par(xpd = TRUE)
+points(as.Date(dat.all$date), notifsPerQR.raw.decalage/prop.util(propUtilActif), pch = 16, col = colActif)
+
+points(as.Date(dat.all$date), notifsPerQR.raw.decalage/prop.util(propUtil.Raw), col = colRegis, pch = 16)
+par(xpd = FALSE)
+
+
+legend("topleft", col = c("white", colActif, colRegis, "white"), pch = 16, 
+       legend = c("prop. utilisateurs ", "Actifs", "Enregistrés"), 
        box.lwd = 0)
 
-dy <- 2
-yo <- 30
-arrows(x0 = as.Date("2020-10-22"), yo, y1 = yo-dy, length = 0.1)
-text(x = as.Date("2020-10-22"), y = yo, "StopCovid devient \nTousAntiCovid", adj = c(0.5, -0.5))
 
-yo <- yo + 3
-arrows(x0 = as.Date("2020-11-28"), yo, y1 = yo-dy, length = 0.1)
-text(x = as.Date("2020-11-28"), y = yo, "Changement critères \n pour notification", adj = c(0.5, -0.5))
+mtext("Date", side = 1, line = 1.5)
 
-points(as.Date(dat.all$date), notifsPerQR.raw.decalage/aveprop(propUtilActif), pch = 16, col = colActif)
-
-points(as.Date(dat.all$date), notifsPerQR.raw.decalage/aveprop(propUtil.Raw), col = colRegis, pch = 16)
-
-
+mtext(paste0("Mise à jour : ", Sys.Date(), "
+Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC, 
+https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series 
+pour nb cas en date d'annonce"), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)
 
 ```
 
