@@ -163,6 +163,12 @@ date_criteres <- "2020-11-28"
 date_sms <- "2020-12-16"
 ```
 
+- Nouveau critère encore de détection de contacts vers le 9 mars 2021.  
+[Source](https://twitter.com/TousAntiCovid/status/1369668376709193730?s=20).  
+```{r include = FALSE}
+date_criteres2 <- "2021-03-09"
+```
+
 
 # Plots
 
@@ -273,17 +279,22 @@ title("Nb notifications par QR code, moy. 7j", line = 2.5)
 
 # Annotate with dates
 abline(v = as.Date(date_TAC), lty = 2)
-abline(v = as.Date(date_sms), lty = 2)
-abline(v = as.Date(date_criteres), lty = 2)
 cexAnnotate <- 0.8
 mtext("StopCovid -> 
 TousAntiCovid", side = 3, at = as.Date(date_TAC), adj = 1, cex = cexAnnotate)
 
+abline(v = as.Date(date_sms), lty = 2)
 mtext("envoi SMS pour 
 QR code", side = 3, at = as.Date(date_sms), adj = 0, cex = cexAnnotate)
 
+abline(v = as.Date(date_criteres), lty = 2)
 mtext("nvx criteres
 detection", side = 3, at = as.Date(date_criteres), adj = 0.7, cex = cexAnnotate)
+
+
+abline(v = as.Date(date_criteres2), lty = 2)
+mtext("nvx criteres
+detection", side = 3, at = as.Date(date_criteres2), adj = 0.5, cex = cexAnnotate)
 
 mtext("Date", side = 1, line = 1.5)
 
@@ -412,18 +423,21 @@ axis(4)
 
 # Annotate with dates
 abline(v = as.Date(date_TAC), lty = 2)
-abline(v = as.Date(date_sms), lty = 2)
-abline(v = as.Date(date_criteres), lty = 2)
 cexAnnotate <- 0.8
 mtext("StopCovid -> 
 TousAntiCovid", side = 3, at = as.Date(date_TAC), adj = 1, cex = cexAnnotate)
 
+abline(v = as.Date(date_sms), lty = 2)
 mtext("envoi SMS pour 
 QR code", side = 3, at = as.Date(date_sms), adj = 0, cex = cexAnnotate)
 
+abline(v = as.Date(date_criteres), lty = 2)
 mtext("nvx criteres
 detection", side = 3, at = as.Date(date_criteres), adj = 0.7, cex = cexAnnotate)
 
+abline(v = as.Date(date_criteres2), lty = 2)
+mtext("nvx criteres
+detection", side = 3, at = as.Date(date_criteres2), adj = 0.5, cex = cexAnnotate)
 
 
 par(xpd = TRUE)
