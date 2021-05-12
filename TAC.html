@@ -262,7 +262,11 @@ div.tocify {
 <h1>Data</h1>
 <ul>
 <li>TousAntiCovid: <a href="https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/">open data, official source</a></li>
-<li>Epidemic data: <a href="https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series">JHU data</a>, because recorded as function of date of the result’s announcement.</li>
+<li>Epidemic data:
+<ul>
+<li><a href="https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series">JHU data</a>, because recorded as function of date of the result’s announcement.</li>
+<li><a href="https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71">data.gouv.fr</a>, dataset which used by JHU, for which date corresponds to the date of declaration and not date of test</li>
+</ul></li>
 </ul>
 <pre class="r"><code># Load and format data
 
@@ -364,11 +368,17 @@ datFR$weekDay &lt;- weekdays(as.Date(datFR$date))
 datFR$P &lt;- c(datFR[1, &quot;total_cas_confirmes&quot;], diff(datFR$total_cas_confirmes))
 # Add the sliding window value to the JHU data
 datFR$P.WeekAve &lt;- sliding.ave(datFR$P, winwdt = 7, pos = 4, na.rm = TRUE)</code></pre>
+<p>Compare JHU and data.gouv.fr datasets (will use data.gouv.fr)</p>
+<pre class="r"><code># Test: compare JHU and datFR
+plot(datJHUFr$date, datJHUFr$P.WeekAve, xlab = &quot;Date&quot;, ylab = &quot;New cases, 7-day average&quot;)
+points(datFR$date, datFR$P.WeekAve, col = &quot;blue&quot;, pch = 2)
+legend(&quot;topleft&quot;, col = c(1, &quot;blue&quot;), pch = c(1, 2), legend = c(&quot;JHU&quot;, &quot;data.gouv.fr&quot;))</code></pre>
+<p><img src="TAC_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <pre class="r"><code># Merge the datasets
 dat.withEpi &lt;- merge(dat.all, datFR, by = &quot;date&quot;)
 names(dat.withEpi)[9] &lt;- &quot;weekDay&quot;</code></pre>
-<p>Données TAC jusqu’au Tue 04 May 2021 (inclus)<br />
-Données épidémio (JHU) jusqu’au Tue 04 May 2021 (inclus). Données épidémio (data.gouv.fr) jusqu’au Tue 04 May 2021 (inclus).</p>
+<p>Données TAC jusqu’au Tue 11 May 2021 (inclus)<br />
+Données épidémio (JHU) jusqu’au Tue 11 May 2021 (inclus). Données épidémio (data.gouv.fr) jusqu’au Tue 11 May 2021 (inclus).</p>
 <div id="quelques-dates-clés" class="section level2">
 <h2>Quelques dates clés</h2>
 <ul>
@@ -393,7 +403,7 @@ source(&quot;commonPlot.R&quot;)</code></pre>
      xlab = &quot;date&quot;, 
      ylab = &quot;Registrations&quot;, 
      pch = 16, col = cols[dat.all$weekDay])</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
 </div>
 <div id="changes-in-number-of-registered-users-per-day" class="section level3">
 <h3>Changes in number of registered users, per day</h3>
@@ -406,7 +416,7 @@ source(&quot;commonPlot.R&quot;)</code></pre>
      yaxs = &quot;i&quot;)
 legend(as.Date(&quot;2020-07-01&quot;), y = 500000, legend = names(cols), col = cols, pch = 16, box.lwd = 0)
 abline(v = as.Date(&quot;2020-10-22&quot;))</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
 <p>The vertical line corresponds to the switch from StopCovid to TousAntiCovid. There was an advertisement campaign by the end of November/beginning of December, with SMS sent to the population.</p>
 </div>
 </div>
@@ -420,7 +430,7 @@ abline(v = as.Date(&quot;2020-10-22&quot;))</code></pre>
      pch = 16, col = cols[dat.all$weekDay])
 lines(dat.all$date, dat.all$diffQRPerDay.WeekAve, col = colAve)
 legend(as.Date(&quot;2020-07-01&quot;), y = 2000, legend = c(names(cols),  &quot;7-day average&quot;), col = c(cols, colAve), pch = c(rep(16, 7), -1), box.lwd = 0, lwd = c(rep(0, 7), 1))</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
 <p>The minima are on Sundays</p>
 </div>
 </div>
@@ -436,7 +446,7 @@ legend(as.Date(&quot;2020-07-01&quot;), y = 2000, legend = c(names(cols),  &quot
 lines(dat.all$date, dat.all$diffNotifPerDay.WeekAve, col = colAve)
 
 legend(as.Date(&quot;2020-07-01&quot;), y = 1000, legend = c(names(cols),  &quot;7-day average&quot;), col = c(cols, colAve), pch = c(rep(16, 7), -1), box.lwd = 0, lwd = c(rep(0, 7), 1))</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
 <p>The minima are on Mondays<br />
 -&gt; There seems to be a one-day difference between scanned QR codes and notifications sent. This was already noticed by F. Lesueur <a href="https://flesueur.medium.com/réalignement-temporel-des-chiffres-tousanticovid-covid-7bda2f0bf1c1">here</a>.</p>
 </div>
@@ -449,7 +459,7 @@ legend(as.Date(&quot;2020-07-01&quot;), y = 1000, legend = c(names(cols),  &quot
      xlab = &quot;date&quot;, 
      ylab = &quot;notifs per QRcode&quot;, 
      pch = 16, col = cols[dat.all$weekDay], main = &quot;raw data, same day&quot;)</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
 <ol start="2" style="list-style-type: decimal">
 <li>one-day difference</li>
 </ol>
@@ -457,7 +467,7 @@ legend(as.Date(&quot;2020-07-01&quot;), y = 1000, legend = c(names(cols),  &quot
      xlab = &quot;date&quot;, 
      ylab = &quot;notifs per QR code&quot;, 
      pch = 16, col = cols[dat.all$weekDay], main = &quot;raw data, one-day delay in notifications&quot;)</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
 <ol start="3" style="list-style-type: decimal">
 <li>same day, 7-day average</li>
 </ol>
@@ -465,7 +475,7 @@ legend(as.Date(&quot;2020-07-01&quot;), y = 1000, legend = c(names(cols),  &quot
      xlab = &quot;date&quot;, 
      ylab = &quot;notifs per QRcode&quot;, 
      pch = 16, col = cols[dat.all$weekDay], main = &quot;7-day ave, same day&quot;)</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
 <ol start="4" style="list-style-type: decimal">
 <li>one-day difference, 7-day average</li>
 </ol>
@@ -486,7 +496,7 @@ mtext(&quot;StopCovid -&gt;
 TousAntiCovid&quot;, side = 3, at = as.Date(date_TAC), adj = 1, cex = cexAnnotate)
 
 abline(v = as.Date(date_sms), lty = 2)
-mtext(&quot;envoi SMS pour 
+mtext(&quot;envoi SMS 
 QR code&quot;, side = 3, at = as.Date(date_sms), adj = 0, cex = cexAnnotate)
 
 abline(v = as.Date(date_criteres), lty = 2)
@@ -507,7 +517,7 @@ mtext(paste0(&quot;Mise à jour : &quot;, Sys.Date(), &quot;
 Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC&quot;), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0, )
 
 axis(4)</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
 </div>
 </div>
 <div id="epidemic-data" class="section level2">
@@ -517,7 +527,7 @@ axis(4)</code></pre>
      xlab = &quot;date&quot;, ylab = &quot;nb of cases&quot;)
 lines(dat.withEpi$date, dat.withEpi$P.WeekAve, col = colAve)
 legend(as.Date(&quot;2020-07-01&quot;), y = 65000, legend = c(names(cols),  &quot;7-day average&quot;), col = c(cols, colAve), pch = c(rep(16, 7), -1), box.lwd = 0, lwd = c(rep(0, 7), 1))</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
 </div>
 <div id="active-users" class="section level2">
 <h2>Active users</h2>
@@ -572,13 +582,49 @@ dx &lt;- 0.3
 mtext(&quot;StopCovid -&gt; 
 TousAntiCovid&quot;, side = 3, at = as.Date(date_TAC), adj = 1-dx, cex = cexAnnotate)
 
-mtext(&quot;envoi SMS pour 
+mtext(&quot;envoi SMS 
 QR code&quot;, side = 3, at = as.Date(date_sms), adj = dx, cex = cexAnnotate)
 
 mtext(paste0(&quot;Mise à jour : &quot;, Sys.Date(), &quot;
 Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC, 
-https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series pour nb cas en date d&#39;annonce&quot;), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71 pour nb cas en date d&#39;annonce&quot;), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)</code></pre>
+<p><img src="TAC_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+</div>
+<div id="qr-codes-and-cases" class="section level2">
+<h2>QR codes and cases</h2>
+<p>Plot QR codes as function of cases, for <a href="https://twitter.com/TousAntiCovid/status/1390294629384441856?s=20">TAC twitter account</a></p>
+<pre class="r"><code>par(mar = c(5, 5, 5, 5))
+par(mgp = c(3, 0.75, 0))
+
+ii &lt;- seq_len(nrow(dat.withEpi))/nrow(dat.withEpi)
+
+plot(c(0, dat.withEpi$P.WeekAve), c(0, dat.withEpi$diffQRPerDay.WeekAve), 
+     type = &quot;l&quot;, 
+     xlab = &quot;&quot;, 
+     ylab = &quot;Nb de QR codes scannés (moy 7 j)&quot;, 
+     xaxs = &quot;i&quot;, yaxs = &quot;i&quot;, frame.plot = FALSE, 
+     main = &quot;QR codes scannés en fonction du nb de cas déclarés&quot;)
+par(xpd = TRUE)
+points(c(0, dat.withEpi$P.WeekAve), c(0, dat.withEpi$diffQRPerDay.WeekAve), col = rgb(1-ii, 0, ii), pch = 16)
+
+mtext(&quot;Nb de cas déclarés (moy 7j)&quot;, side = 1, line = 2)
+par(xpd = FALSE)
+
+cexdate &lt;- 1.5
+i1 &lt;- which(dat.withEpi$date == date_TAC)
+i2 &lt;- which(dat.withEpi$date == date_sms)
+iend &lt;- nrow(dat.withEpi)-3
+
+pts &lt;- c(i1, i2, iend)
+points(dat.withEpi$P.WeekAve[pts], dat.withEpi$diffQRPerDay.WeekAve[pts], col = rgb(1-ii[pts], 0, ii[pts]), pch = 15, cex = cexdate)
+text(dat.withEpi[pts, &quot;P.WeekAve&quot;], dat.withEpi[pts, &quot;diffQRPerDay.WeekAve&quot;], labels = c(&quot;StopCovid 
+-&gt; TAC&quot;, &quot;Envoi SMS&quot;, toString(dat.withEpi$date[iend])), adj = c(0.5, 1.5))
+
+
+mtext(paste0(&quot;Mise à jour : &quot;, Sys.Date(), &quot;
+Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC, 
+https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71 pour nb cas en date d&#39;annonce&quot;), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)</code></pre>
+<p><img src="TAC_files/figure-html/unnamed-chunk-21-1.png" width="672" /></p>
 </div>
 <div id="app-settings" class="section level2">
 <h2>App settings</h2>
@@ -623,7 +669,7 @@ mtext(&quot;StopCovid -&gt;
 TousAntiCovid&quot;, side = 3, at = as.Date(date_TAC), adj = 1, cex = cexAnnotate)
 
 abline(v = as.Date(date_sms), lty = 2)
-mtext(&quot;envoi SMS pour 
+mtext(&quot;envoi SMS 
 QR code&quot;, side = 3, at = as.Date(date_sms), adj = 0, cex = cexAnnotate)
 
 abline(v = as.Date(date_criteres), lty = 2)
@@ -651,9 +697,9 @@ mtext(&quot;Date&quot;, side = 1, line = 1.5)
 
 mtext(paste0(&quot;Mise à jour : &quot;, Sys.Date(), &quot;
 Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC, 
-https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series 
+https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71 
 pour nb cas en date d&#39;annonce&quot;), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-22-1.png" width="672" /></p>
 </div>
 </div>
 

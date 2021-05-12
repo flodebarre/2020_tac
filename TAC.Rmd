@@ -17,7 +17,9 @@ knitr::opts_knit$set(global.par = TRUE)
 # Data
 
 -  TousAntiCovid: [open data, official source](https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/)
--  Epidemic data: [JHU data](https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series), because recorded as function of date of the result's announcement. 
+-  Epidemic data: 
+   -  [JHU data](https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series), because recorded as function of date of the result's announcement. 
+   -  [data.gouv.fr](https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71), dataset which used by JHU, for which date corresponds to the date of declaration and not date of test
 
 
 ```{r, results="hide"}
@@ -128,7 +130,14 @@ datFR$weekDay <- weekdays(as.Date(datFR$date))
 datFR$P <- c(datFR[1, "total_cas_confirmes"], diff(datFR$total_cas_confirmes))
 # Add the sliding window value to the JHU data
 datFR$P.WeekAve <- sliding.ave(datFR$P, winwdt = 7, pos = 4, na.rm = TRUE)
+```
 
+Compare JHU and data.gouv.fr datasets (will use data.gouv.fr)  
+```{r}
+# Test: compare JHU and datFR
+plot(datJHUFr$date, datJHUFr$P.WeekAve, xlab = "Date", ylab = "New cases, 7-day average")
+points(datFR$date, datFR$P.WeekAve, col = "blue", pch = 2)
+legend("topleft", col = c(1, "blue"), pch = c(1, 2), legend = c("JHU", "data.gouv.fr"))
 ```
 
 
@@ -284,7 +293,7 @@ mtext("StopCovid ->
 TousAntiCovid", side = 3, at = as.Date(date_TAC), adj = 1, cex = cexAnnotate)
 
 abline(v = as.Date(date_sms), lty = 2)
-mtext("envoi SMS pour 
+mtext("envoi SMS 
 QR code", side = 3, at = as.Date(date_sms), adj = 0, cex = cexAnnotate)
 
 abline(v = as.Date(date_criteres), lty = 2)
@@ -373,13 +382,52 @@ dx <- 0.3
 mtext("StopCovid -> 
 TousAntiCovid", side = 3, at = as.Date(date_TAC), adj = 1-dx, cex = cexAnnotate)
 
-mtext("envoi SMS pour 
+mtext("envoi SMS 
 QR code", side = 3, at = as.Date(date_sms), adj = dx, cex = cexAnnotate)
 
 mtext(paste0("Mise à jour : ", Sys.Date(), "
 Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC, 
-https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series pour nb cas en date d'annonce"), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)
+https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71 pour nb cas en date d'annonce"), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)
 ```
+
+## QR codes and cases
+
+Plot QR codes as function of cases, for [TAC twitter account](https://twitter.com/TousAntiCovid/status/1390294629384441856?s=20)
+
+```{r}
+par(mar = c(5, 5, 5, 5))
+par(mgp = c(3, 0.75, 0))
+
+ii <- seq_len(nrow(dat.withEpi))/nrow(dat.withEpi)
+
+plot(c(0, dat.withEpi$P.WeekAve), c(0, dat.withEpi$diffQRPerDay.WeekAve), 
+     type = "l", 
+     xlab = "", 
+     ylab = "Nb de QR codes scannés (moy 7 j)", 
+     xaxs = "i", yaxs = "i", frame.plot = FALSE, 
+     main = "QR codes scannés en fonction du nb de cas déclarés")
+par(xpd = TRUE)
+points(c(0, dat.withEpi$P.WeekAve), c(0, dat.withEpi$diffQRPerDay.WeekAve), col = rgb(1-ii, 0, ii), pch = 16)
+
+mtext("Nb de cas déclarés (moy 7j)", side = 1, line = 2)
+par(xpd = FALSE)
+
+cexdate <- 1.5
+i1 <- which(dat.withEpi$date == date_TAC)
+i2 <- which(dat.withEpi$date == date_sms)
+iend <- nrow(dat.withEpi)-3
+
+pts <- c(i1, i2, iend)
+points(dat.withEpi$P.WeekAve[pts], dat.withEpi$diffQRPerDay.WeekAve[pts], col = rgb(1-ii[pts], 0, ii[pts]), pch = 15, cex = cexdate)
+text(dat.withEpi[pts, "P.WeekAve"], dat.withEpi[pts, "diffQRPerDay.WeekAve"], labels = c("StopCovid 
+-> TAC", "Envoi SMS", toString(dat.withEpi$date[iend])), adj = c(0.5, 1.5))
+
+
+mtext(paste0("Mise à jour : ", Sys.Date(), "
+Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC, 
+https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71 pour nb cas en date d'annonce"), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)
+```
+
 
 ## App settings
 
@@ -428,7 +476,7 @@ mtext("StopCovid ->
 TousAntiCovid", side = 3, at = as.Date(date_TAC), adj = 1, cex = cexAnnotate)
 
 abline(v = as.Date(date_sms), lty = 2)
-mtext("envoi SMS pour 
+mtext("envoi SMS 
 QR code", side = 3, at = as.Date(date_sms), adj = 0, cex = cexAnnotate)
 
 abline(v = as.Date(date_criteres), lty = 2)
@@ -456,7 +504,7 @@ mtext("Date", side = 1, line = 1.5)
 
 mtext(paste0("Mise à jour : ", Sys.Date(), "
 Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC, 
-https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series 
+https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71 
 pour nb cas en date d'annonce"), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)
 
 ```
