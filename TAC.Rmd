@@ -111,7 +111,13 @@ datJHUFr <- datJHUFr[, -(1:2)]
 datJHUFr$weekDay <- weekdays(as.Date(datJHUFr$date))
 # Extract data per day (JHU provides cumulative values)
 datJHUFr$P <- c(datJHUFr[1, "cumP"], diff(datJHUFr$cumP))
+
+# Turn negative values into NA
+# (has to be done after diff are calculated to make sure corrections are taken into account)
+datJHUFr[which(datJHUFr$P < 0), "P"] <- NA
+
 # Add the sliding window value to the JHU data
+# (after negative values have been turned into NAs)
 datJHUFr$P.WeekAve <- sliding.ave(datJHUFr$P, winwdt = 7, pos = 4, na.rm = TRUE)
 ```
 
@@ -126,9 +132,15 @@ datFR$date <- as.Date(datFR$date)
 
 # Get week day
 datFR$weekDay <- weekdays(as.Date(datFR$date))
-# Extract data per day (JHU provides cumulative values)
+# Extract data per day (dataset provides cumulative values)
 datFR$P <- c(datFR[1, "total_cas_confirmes"], diff(datFR$total_cas_confirmes))
-# Add the sliding window value to the JHU data
+
+# Turn negative values into NA
+# (has to be done after diff are calculated to make sure corrections are taken into account)
+datFR[which(datFR$P < 0), "P"] <- NA
+
+# Add the sliding window value to the data
+# (after negative values have been turned into NAs)
 datFR$P.WeekAve <- sliding.ave(datFR$P, winwdt = 7, pos = 4, na.rm = TRUE)
 ```
 
@@ -152,6 +164,7 @@ Données TAC jusqu'au `r format(max(dat.all$date), "%a %d %b %Y")` (inclus)
 Données épidémio (JHU) jusqu'au `r format(max(datJHUFr$date), "%a %d %b %Y")` (inclus).
 Données épidémio (data.gouv.fr) jusqu'au `r format(max(as.Date(datFR$date)), "%a %d %b %Y")` (inclus).
 
+On utilise les données épidémio data.gouv.fr. 
 
 ## Quelques dates clés
 
@@ -176,6 +189,31 @@ date_sms <- "2020-12-16"
 [Source](https://twitter.com/TousAntiCovid/status/1369668376709193730?s=20).  
 ```{r include = FALSE}
 date_criteres2 <- "2021-03-09"
+```
+
+
+- Problème de dédoublonnage : correction à partir du 20 mai 2021
+[Source](https://www.data.gouv.fr/fr/datasets/donnees-relatives-aux-resultats-des-tests-virologiques-covid-19/)
+> A compter de ce jour, les indicateurs seront corrigés afin de supprimer l’effet doublon, lors de la réalisation de plusieurs tests de dépistage par une même personne.
+>
+> Depuis le début de la pandémie, la plateforme sécurisée Si-DEP enregistre tous les résultats des tests de dépistage. Afin de garantir la protection des données personnelles des personnes testées, chaque résultat était lié à l’émission d’un pseudo anonymisé. Cependant, avec l’apparition des variants sur le territoire, certaines personnes sont amenées à réaliser deux tests, jusqu’à présent comptabilisés deux fois.
+>
+> L'algorithme utilisé a donc récemment été mis à jour afin qu’il ne décompte qu’un seul patient lorsque celui-ci se fait tester plusieurs fois dans un intervalle de temps court, toujours en respectant l'anonymat. Grâce à cette nouvelle pseudonymisation, Santé publique France est capable de renforcer son efficacité et de produire des données encore plus précises, consultables chaque semaine dans son point épidémiologique.  
+
+Les tests antigéniques ont été inclus à partir du 8 décembre 2020. 
+
+```{r include = FALSE}
+date_debutAg <- "2020-12-08"
+date_finDoublonAg <- "2021-05-20"
+```
+
+
+Ajout de l'information de la période des doublons dans les données
+```{r}
+# Add information about the reliability of the count
+# less reliable in the time interval where there were issues with duplicates
+dat.withEpi$reliableEpi <- TRUE 
+idoublons <- which(as.Date(dat.withEpi$date) > as.Date(date_debutAg) & as.Date(dat.withEpi$date) <= as.Date(date_finDoublonAg))
 ```
 
 
@@ -318,7 +356,7 @@ axis(4)
 
 ## Epidemic data
 
-JHU data, date is date at which result was communicated (and not sampling date).
+Epidemic data, date is date at which result was communicated (and not sampling date).
 
 ```{r}
 plot(dat.withEpi$date, dat.withEpi$P, col = cols[dat.withEpi$weekDay], pch = 16, 
@@ -346,14 +384,22 @@ propUtil <- dat.withEpi$register.WeekAve / popFR
 # Active users, averaged over a week
 propUtilActif <- dat.withEpi$diffQRPerDay.WeekAve / dat.withEpi$P.WeekAve
 
+
+
 colActif <- rgb(0.4, 0.7, 0)
 colRegis <- gray(0.4)
+colActifPb <- "#b2ff52"
+# Flagging problems in epi data
+cols <- rep(colActif, length(propUtilActif))
+cols[idoublons] <- colActifPb
+
+  
 cexPoints <- 0.8 # Size of the dots
 ymax <- ceiling(10*max(propUtil.Raw, na.rm = TRUE))/10
 
 plot(dat.withEpi$date, propUtilActif, 
      xlab = "", ylab = "Proportions d'utilisateurs", ylim = c(0, ymax), 
-     pch = 16, col = colActif, 
+     pch = 16, col = cols, 
        main = "Fraction de la population utilisant TAC", 
      yaxs = "i", frame.plot = FALSE, cex = cexPoints)
 mtext("Date", side = 1, line = 1.5)
@@ -367,8 +413,8 @@ for(i in seq(0.05, ymax, by = 0.05)){
 # Add points for raw users
 points(dat.withEpi$date, propUtil.Raw, pch = 16, col = colRegis, cex = cexPoints)
 
-legend("topleft", col = c(gray(0.4), rgb(0.4, 0.7, 0)), pch = 16, 
-       legend = c("Enregistrés (brut)", "Actifs (moy. 7j)"), 
+legend("topleft", col = c(gray(0.4), colActif, colActifPb), pch = 16, 
+       legend = c("Enregistrés (brut)", "Actifs (moy. 7j)", "Actifs, mais pb doublons données épi"), 
        bty = "o", pt.cex = cexPoints, box.lwd = 0)
 
 axis(4)
@@ -400,6 +446,11 @@ par(mgp = c(3, 0.75, 0))
 
 ii <- seq_len(nrow(dat.withEpi))/nrow(dat.withEpi)
 
+# Flag epi data with issues
+pchs <- rep(16, nrow(dat.withEpi)+1)
+pchs[idoublons] <- 1
+
+
 plot(c(0, dat.withEpi$P.WeekAve), c(0, dat.withEpi$diffQRPerDay.WeekAve), 
      type = "l", 
      xlab = "", 
@@ -407,7 +458,7 @@ plot(c(0, dat.withEpi$P.WeekAve), c(0, dat.withEpi$diffQRPerDay.WeekAve),
      xaxs = "i", yaxs = "i", frame.plot = FALSE, 
      main = "QR codes scannés en fonction du nb de cas déclarés")
 par(xpd = TRUE)
-points(c(0, dat.withEpi$P.WeekAve), c(0, dat.withEpi$diffQRPerDay.WeekAve), col = rgb(1-ii, 0, ii), pch = 16)
+points(c(0, dat.withEpi$P.WeekAve), c(0, dat.withEpi$diffQRPerDay.WeekAve), col = rgb(1-ii, 0, ii), pch = pchs)
 
 mtext("Nb de cas déclarés (moy 7j)", side = 1, line = 2)
 par(xpd = FALSE)
@@ -416,6 +467,7 @@ cexdate <- 1.5
 i1 <- which(dat.withEpi$date == date_TAC)
 i2 <- which(dat.withEpi$date == date_sms)
 iend <- nrow(dat.withEpi)-3
+
 
 pts <- c(i1, i2, iend)
 points(dat.withEpi$P.WeekAve[pts], dat.withEpi$diffQRPerDay.WeekAve[pts], col = rgb(1-ii[pts], 0, ii[pts]), pch = 15, cex = cexdate)
@@ -448,7 +500,7 @@ prop.util <- function(x){
 plot(as.Date(dat.all$date), notifsPerQR.raw.decalage / prop.util(propUtilActif),       
      xlab = "", 
      ylab = "Notif. par QR code / max(Prop. utilisateurs 7 derniers j.)", 
-     pch = 16, col = colActif, main = "", type = "n", 
+     main = "", type = "n", 
      yaxs = "i", 
      frame.plot = FALSE)
 
@@ -489,15 +541,16 @@ detection", side = 3, at = as.Date(date_criteres2), adj = 0.5, cex = cexAnnotate
 
 
 par(xpd = TRUE)
-points(as.Date(dat.all$date), notifsPerQR.raw.decalage/prop.util(propUtilActif), pch = 16, col = colActif)
+# Colors are flagging the duplicate problems
+points(as.Date(dat.all$date), notifsPerQR.raw.decalage/prop.util(propUtilActif), pch = 16, col = cols)
 
 points(as.Date(dat.all$date), notifsPerQR.raw.decalage/prop.util(propUtil.Raw), col = colRegis, pch = 16)
 par(xpd = FALSE)
 
 
-legend("topleft", col = c("white", colActif, colRegis, "white"), pch = 16, 
-       legend = c("prop. utilisateurs ", "Actifs", "Enregistrés"), 
-       box.lwd = 0)
+legend("topleft", col = c("white", colActif, colActifPb, colRegis, "white"), pch = 16, 
+       legend = c("prop. utilisateurs ", "Actifs", "Actifs, données avec pb doublons", "Enregistrés"), 
+       box.lwd = 0, bg = gray(0, 0))
 
 
 mtext("Date", side = 1, line = 1.5)
