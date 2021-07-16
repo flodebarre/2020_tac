@@ -12,6 +12,8 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_knit$set(global.par = TRUE)
+
+#knitr::opts_chunk$set(fig.width=12, fig.height=8) 
 ```
 
 # Data
@@ -224,6 +226,14 @@ idoublons <- which(as.Date(dat.withEpi$date) > as.Date(date_debutAg) & as.Date(d
 source("commonPlot.R")
 ```
 
+```{r}
+wk <- seq(min(dat.withEpi$date), max(dat.withEpi$date), by = "week")
+
+plotXaxs <- function(){
+  axis(1, wk, labels = as.Date(wk), las = 3, cex.axis = 0.3)
+}
+```
+
 ## TAC, registrations
 
 ### Number of registered users, over time
@@ -256,7 +266,7 @@ There was an advertisement campaign by the end of November/beginning of December
 
 ### QR codes scanned every day
 
-```{r}
+```{r QRCodesPerDay}
 plot(as.Date(dat.all$date), dat.all$diffQRPerDay, log = "",      
      xlab = "date", 
      ylab = "delta QR per day", 
@@ -270,7 +280,7 @@ The minima are on Sundays
 ## TAC, notifications
 
 ### Notifications sent every day  
-```{r}
+```{r NotifsPerDay}
 plot(as.Date(dat.all$date), dat.all$diffNotifPerDay, log = "",      
      xlab = "date", 
      ylab = "delta notifications per day", 
@@ -288,7 +298,7 @@ This was already noticed by F. Lesueur [here](https://flesueur.medium.com/réali
 ### Notifications per QR code
 
 1) same day   
-```{r}
+```{r NotifsPerQRCodeSameDay}
 plot(as.Date(dat.all$date), dat.all$diffNotifPerDay / dat.all$diffQRPerDay, log = "",      
      xlab = "date", 
      ylab = "notifs per QRcode", 
@@ -313,14 +323,14 @@ plot(as.Date(dat.all$date), dat.all$diffNotifPerDay.WeekAve / dat.all$diffQRPerD
 ```
 
 4) one-day difference, 7-day average
-```{r}
+```{r NotifsPerQR}
 par(mar = rep(5, 4))
 colNotifsCas <- "#045a8d"
 plot(as.Date(dat.all$date), dat.all$diffNotifPerDay.WeekAve / (c(NA, dat.all$diffQRPerDay.WeekAve[-nrow(dat.all)])), log = "",      
      xlab = "", 
      ylab = "nb de notifs par QR code", 
      pch = 16, col = colNotifsCas, 
-     yaxs = "i", frame.plot = FALSE)
+     yaxs = "i", frame.plot = FALSE, axes = FALSE)
 
 title("Nb notifications par QR code, moy. 7j", line = 2.5)
 
@@ -351,6 +361,8 @@ for(i in seq(0.5, 1.5, by = 0.5)){
 mtext(paste0("Mise à jour : ", Sys.Date(), "
 Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC"), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0, )
 
+plotXaxs()
+axis(2)
 axis(4)
 ```
 
@@ -358,7 +370,7 @@ axis(4)
 
 Epidemic data, date is date at which result was communicated (and not sampling date).
 
-```{r}
+```{r EpidemicData}
 plot(dat.withEpi$date, dat.withEpi$P, col = cols[dat.withEpi$weekDay], pch = 16, 
      xlab = "date", ylab = "nb of cases")
 lines(dat.withEpi$date, dat.withEpi$P.WeekAve, col = colAve)
@@ -370,7 +382,7 @@ legend(as.Date("2020-07-01"), y = 65000, legend = c(names(cols),  "7-day average
 Not all users are active; some people have downloaded the app but do not turn on bluetooth; some may just have downloaded the app for their "attestations".  
 To estimate the number of active users, we will compare the proportion of registered users in the whole population to the proportion of scanned QR codes among positive test results. 
 
-```{r}
+```{r EstimateActiveUsers}
 par(xpd = TRUE)
 # Approximate size of the French population
 par(mar = c(5, 5, 5, 5))
@@ -401,7 +413,8 @@ plot(dat.withEpi$date, propUtilActif,
      xlab = "", ylab = "Proportions d'utilisateurs", ylim = c(0, ymax), 
      pch = 16, col = cols, 
        main = "Fraction de la population utilisant TAC", 
-     yaxs = "i", frame.plot = FALSE, cex = cexPoints)
+     yaxs = "i", frame.plot = FALSE, cex = cexPoints,
+      axes = FALSE)
 mtext("Date", side = 1, line = 1.5)
 
 # Add horizontal lines to read the values
@@ -416,8 +429,12 @@ points(dat.withEpi$date, propUtil.Raw, pch = 16, col = colRegis, cex = cexPoints
 legend("topleft", col = c(gray(0.4), colActif, colActifPb), pch = 16, 
        legend = c("Enregistrés (brut)", "Actifs (moy. 7j)", "Actifs, mais pb doublons données épi"), 
        bty = "o", pt.cex = cexPoints, box.lwd = 0)
-
 axis(4)
+axis(2)
+
+
+
+
 par(xpd = FALSE)
 
 # Annotate with dates
@@ -440,7 +457,7 @@ https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71 pour
 
 Plot QR codes as function of cases, for [TAC twitter account](https://twitter.com/TousAntiCovid/status/1390294629384441856?s=20)
 
-```{r}
+```{r QrcodesAsFuncCases}
 par(mar = c(5, 5, 5, 5))
 par(mgp = c(3, 0.75, 0))
 
@@ -487,7 +504,7 @@ We want to see if the conditions to detect a contact have changed over time. If 
 Notifications are sent to contacts of the 14? last days (maybe with decreasing proportion when the contact is older). 
 
 
-```{r}
+```{r AppSettingsDetectedContacts}
 par(mar = rep(5, 4))
 # Notifications per QR code, 1-day delay, raw
 notifsPerQR.raw.decalage <- dat.all$diffNotifPerDay / (c(NA, dat.all$diffQRPerDay[-nrow(dat.all)]))
@@ -502,7 +519,13 @@ plot(as.Date(dat.all$date), notifsPerQR.raw.decalage / prop.util(propUtilActif),
      ylab = "Notif. par QR code / max(Prop. utilisateurs 7 derniers j.)", 
      main = "", type = "n", 
      yaxs = "i", 
-     frame.plot = FALSE)
+     frame.plot = FALSE, axes = FALSE)
+
+plotXaxs()
+axis(2)
+axis(4)
+
+
 
 title("Nb contacts détectés par utilisateur", line = 3)
 mtext("(Estimation du nb notifs/QRcode si 100% utilisateurs)", line = 2, side = 3, cex = 0.8)
@@ -516,8 +539,6 @@ mtext("(Estimation du nb notifs/QRcode si 100% utilisateurs)", line = 2, side = 
 for(i in seq(0, 65, by = 5)){
   abline(h = i, lty = 1, col = gray(0.8), lwd = 0.4)
 }
-
-axis(4)
 
 
 

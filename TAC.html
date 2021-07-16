@@ -389,8 +389,8 @@ legend(&quot;topleft&quot;, col = c(1, &quot;blue&quot;), pch = c(1, 2), legend 
 <pre class="r"><code># Merge the datasets
 dat.withEpi &lt;- merge(dat.all, datFR, by = &quot;date&quot;)
 names(dat.withEpi)[9] &lt;- &quot;weekDay&quot;</code></pre>
-<p>Données TAC jusqu’au Tue 08 Jun 2021 (inclus)<br />
-Données épidémio (JHU) jusqu’au Tue 08 Jun 2021 (inclus). Données épidémio (data.gouv.fr) jusqu’au Tue 08 Jun 2021 (inclus).</p>
+<p>Données TAC jusqu’au Thu 15 Jul 2021 (inclus)<br />
+Données épidémio (JHU) jusqu’au Thu 15 Jul 2021 (inclus). Données épidémio (data.gouv.fr) jusqu’au Fri 16 Jul 2021 (inclus).</p>
 <p>On utilise les données épidémio data.gouv.fr.</p>
 <div id="quelques-dates-clés" class="section level2">
 <h2>Quelques dates clés</h2>
@@ -415,6 +415,11 @@ idoublons &lt;- which(as.Date(dat.withEpi$date) &gt; as.Date(date_debutAg) &amp;
 <h1>Plots</h1>
 <pre class="r"><code># Load plot settings
 source(&quot;commonPlot.R&quot;)</code></pre>
+<pre class="r"><code>wk &lt;- seq(min(dat.withEpi$date), max(dat.withEpi$date), by = &quot;week&quot;)
+
+plotXaxs &lt;- function(){
+  axis(1, wk, labels = as.Date(wk), las = 3, cex.axis = 0.3)
+}</code></pre>
 <div id="tac-registrations" class="section level2">
 <h2>TAC, registrations</h2>
 <div id="number-of-registered-users-over-time" class="section level3">
@@ -423,7 +428,7 @@ source(&quot;commonPlot.R&quot;)</code></pre>
      xlab = &quot;date&quot;, 
      ylab = &quot;Registrations&quot;, 
      pch = 16, col = cols[dat.all$weekDay])</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
 </div>
 <div id="changes-in-number-of-registered-users-per-day" class="section level3">
 <h3>Changes in number of registered users, per day</h3>
@@ -436,7 +441,7 @@ source(&quot;commonPlot.R&quot;)</code></pre>
      yaxs = &quot;i&quot;)
 legend(as.Date(&quot;2020-07-01&quot;), y = 500000, legend = names(cols), col = cols, pch = 16, box.lwd = 0)
 abline(v = as.Date(&quot;2020-10-22&quot;))</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
 <p>The vertical line corresponds to the switch from StopCovid to TousAntiCovid. There was an advertisement campaign by the end of November/beginning of December, with SMS sent to the population.</p>
 </div>
 </div>
@@ -450,7 +455,7 @@ abline(v = as.Date(&quot;2020-10-22&quot;))</code></pre>
      pch = 16, col = cols[dat.all$weekDay])
 lines(dat.all$date, dat.all$diffQRPerDay.WeekAve, col = colAve)
 legend(as.Date(&quot;2020-07-01&quot;), y = 2000, legend = c(names(cols),  &quot;7-day average&quot;), col = c(cols, colAve), pch = c(rep(16, 7), -1), box.lwd = 0, lwd = c(rep(0, 7), 1))</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/QRCodesPerDay-1.png" width="672" /></p>
 <p>The minima are on Sundays</p>
 </div>
 </div>
@@ -466,7 +471,7 @@ legend(as.Date(&quot;2020-07-01&quot;), y = 2000, legend = c(names(cols),  &quot
 lines(dat.all$date, dat.all$diffNotifPerDay.WeekAve, col = colAve)
 
 legend(as.Date(&quot;2020-07-01&quot;), y = 1000, legend = c(names(cols),  &quot;7-day average&quot;), col = c(cols, colAve), pch = c(rep(16, 7), -1), box.lwd = 0, lwd = c(rep(0, 7), 1))</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/NotifsPerDay-1.png" width="672" /></p>
 <p>The minima are on Mondays<br />
 -&gt; There seems to be a one-day difference between scanned QR codes and notifications sent. This was already noticed by F. Lesueur <a href="https://flesueur.medium.com/réalignement-temporel-des-chiffres-tousanticovid-covid-7bda2f0bf1c1">here</a>.</p>
 </div>
@@ -479,7 +484,7 @@ legend(as.Date(&quot;2020-07-01&quot;), y = 1000, legend = c(names(cols),  &quot
      xlab = &quot;date&quot;, 
      ylab = &quot;notifs per QRcode&quot;, 
      pch = 16, col = cols[dat.all$weekDay], main = &quot;raw data, same day&quot;)</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/NotifsPerQRCodeSameDay-1.png" width="672" /></p>
 <ol start="2" style="list-style-type: decimal">
 <li>one-day difference</li>
 </ol>
@@ -487,7 +492,7 @@ legend(as.Date(&quot;2020-07-01&quot;), y = 1000, legend = c(names(cols),  &quot
      xlab = &quot;date&quot;, 
      ylab = &quot;notifs per QR code&quot;, 
      pch = 16, col = cols[dat.all$weekDay], main = &quot;raw data, one-day delay in notifications&quot;)</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
 <ol start="3" style="list-style-type: decimal">
 <li>same day, 7-day average</li>
 </ol>
@@ -495,7 +500,7 @@ legend(as.Date(&quot;2020-07-01&quot;), y = 1000, legend = c(names(cols),  &quot
      xlab = &quot;date&quot;, 
      ylab = &quot;notifs per QRcode&quot;, 
      pch = 16, col = cols[dat.all$weekDay], main = &quot;7-day ave, same day&quot;)</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
 <ol start="4" style="list-style-type: decimal">
 <li>one-day difference, 7-day average</li>
 </ol>
@@ -505,7 +510,7 @@ plot(as.Date(dat.all$date), dat.all$diffNotifPerDay.WeekAve / (c(NA, dat.all$dif
      xlab = &quot;&quot;, 
      ylab = &quot;nb de notifs par QR code&quot;, 
      pch = 16, col = colNotifsCas, 
-     yaxs = &quot;i&quot;, frame.plot = FALSE)
+     yaxs = &quot;i&quot;, frame.plot = FALSE, axes = FALSE)
 
 title(&quot;Nb notifications par QR code, moy. 7j&quot;, line = 2.5)
 
@@ -536,8 +541,10 @@ for(i in seq(0.5, 1.5, by = 0.5)){
 mtext(paste0(&quot;Mise à jour : &quot;, Sys.Date(), &quot;
 Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC&quot;), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0, )
 
+plotXaxs()
+axis(2)
 axis(4)</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/NotifsPerQR-1.png" width="672" /></p>
 </div>
 </div>
 <div id="epidemic-data" class="section level2">
@@ -547,7 +554,7 @@ axis(4)</code></pre>
      xlab = &quot;date&quot;, ylab = &quot;nb of cases&quot;)
 lines(dat.withEpi$date, dat.withEpi$P.WeekAve, col = colAve)
 legend(as.Date(&quot;2020-07-01&quot;), y = 65000, legend = c(names(cols),  &quot;7-day average&quot;), col = c(cols, colAve), pch = c(rep(16, 7), -1), box.lwd = 0, lwd = c(rep(0, 7), 1))</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-21-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/EpidemicData-1.png" width="672" /></p>
 </div>
 <div id="active-users" class="section level2">
 <h2>Active users</h2>
@@ -583,7 +590,8 @@ plot(dat.withEpi$date, propUtilActif,
      xlab = &quot;&quot;, ylab = &quot;Proportions d&#39;utilisateurs&quot;, ylim = c(0, ymax), 
      pch = 16, col = cols, 
        main = &quot;Fraction de la population utilisant TAC&quot;, 
-     yaxs = &quot;i&quot;, frame.plot = FALSE, cex = cexPoints)
+     yaxs = &quot;i&quot;, frame.plot = FALSE, cex = cexPoints,
+      axes = FALSE)
 mtext(&quot;Date&quot;, side = 1, line = 1.5)
 
 # Add horizontal lines to read the values
@@ -598,8 +606,12 @@ points(dat.withEpi$date, propUtil.Raw, pch = 16, col = colRegis, cex = cexPoints
 legend(&quot;topleft&quot;, col = c(gray(0.4), colActif, colActifPb), pch = 16, 
        legend = c(&quot;Enregistrés (brut)&quot;, &quot;Actifs (moy. 7j)&quot;, &quot;Actifs, mais pb doublons données épi&quot;), 
        bty = &quot;o&quot;, pt.cex = cexPoints, box.lwd = 0)
-
 axis(4)
+axis(2)
+
+
+
+
 par(xpd = FALSE)
 
 # Annotate with dates
@@ -616,7 +628,7 @@ QR code&quot;, side = 3, at = as.Date(date_sms), adj = dx, cex = cexAnnotate)
 mtext(paste0(&quot;Mise à jour : &quot;, Sys.Date(), &quot;
 Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC, 
 https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71 pour nb cas en date d&#39;annonce&quot;), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-22-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/EstimateActiveUsers-1.png" width="672" /></p>
 </div>
 <div id="qr-codes-and-cases" class="section level2">
 <h2>QR codes and cases</h2>
@@ -658,7 +670,7 @@ text(dat.withEpi[pts, &quot;P.WeekAve&quot;], dat.withEpi[pts, &quot;diffQRPerDa
 mtext(paste0(&quot;Mise à jour : &quot;, Sys.Date(), &quot;
 Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC, 
 https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71 pour nb cas en date d&#39;annonce&quot;), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-23-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/QrcodesAsFuncCases-1.png" width="672" /></p>
 </div>
 <div id="app-settings" class="section level2">
 <h2>App settings</h2>
@@ -677,7 +689,13 @@ plot(as.Date(dat.all$date), notifsPerQR.raw.decalage / prop.util(propUtilActif),
      ylab = &quot;Notif. par QR code / max(Prop. utilisateurs 7 derniers j.)&quot;, 
      main = &quot;&quot;, type = &quot;n&quot;, 
      yaxs = &quot;i&quot;, 
-     frame.plot = FALSE)
+     frame.plot = FALSE, axes = FALSE)
+
+plotXaxs()
+axis(2)
+axis(4)
+
+
 
 title(&quot;Nb contacts détectés par utilisateur&quot;, line = 3)
 mtext(&quot;(Estimation du nb notifs/QRcode si 100% utilisateurs)&quot;, line = 2, side = 3, cex = 0.8)
@@ -691,8 +709,6 @@ mtext(&quot;(Estimation du nb notifs/QRcode si 100% utilisateurs)&quot;, line = 
 for(i in seq(0, 65, by = 5)){
   abline(h = i, lty = 1, col = gray(0.8), lwd = 0.4)
 }
-
-axis(4)
 
 
 
@@ -734,7 +750,7 @@ mtext(paste0(&quot;Mise à jour : &quot;, Sys.Date(), &quot;
 Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC, 
 https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71 
 pour nb cas en date d&#39;annonce&quot;), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-24-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/AppSettingsDetectedContacts-1.png" width="672" /></p>
 </div>
 </div>
 
