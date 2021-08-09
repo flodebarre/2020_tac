@@ -278,7 +278,9 @@ URL &lt;- &quot;https://www.data.gouv.fr/fr/datasets/r/0e2168ec-24c7-4b49-a900-c
 # Download and read data
 today &lt;- Sys.Date() # today&#39;s date
 dataFile &lt;- paste0(&quot;data/TAC_&quot;, today, &quot;.csv&quot;) # name file with today&#39;s date
-download.file(URL, dataFile) # download file from repo
+if(dlData){
+  download.file(URL, dataFile) # download file from repo
+}
 dat &lt;- read.csv(dataFile)
 
 ## Description from the website (2020-12-23)
@@ -336,7 +338,9 @@ dat.all$date &lt;- as.Date(dat.all$date)</code></pre>
 URL &lt;- &quot;https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv&quot;
 # Download and read data
 dataFile &lt;- paste0(&quot;data/JHU_cases_all_&quot;, today, &quot;.csv&quot;) # name file with today&#39;s date
-download.file(URL, dataFile) # download file from repo
+if(dlData){
+  download.file(URL, dataFile) # download file from repo
+}
 datJHU &lt;- read.csv(dataFile, header = TRUE, check.names = FALSE)
 # Extract data about France
 datJHU.France &lt;- datJHU[datJHU$`Country/Region` == &quot;France&quot;, ]
@@ -364,7 +368,9 @@ datJHUFr$P.WeekAve &lt;- sliding.ave(datJHUFr$P, winwdt = 7, pos = 4, na.rm = TR
 URL &lt;- &quot;https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71&quot;
 # Download and read data
 dataFile &lt;- paste0(&quot;data/FR_cases_all_&quot;, today, &quot;.csv&quot;) # name file with today&#39;s date
-download.file(URL, dataFile) # download file from repo
+if(dlData){
+  download.file(URL, dataFile) # download file from repo
+}
 datFR &lt;- read.csv(dataFile, header = TRUE, check.names = FALSE)
 datFR$date &lt;- as.Date(datFR$date)
 
@@ -389,8 +395,8 @@ legend(&quot;topleft&quot;, col = c(1, &quot;blue&quot;), pch = c(1, 2), legend 
 <pre class="r"><code># Merge the datasets
 dat.withEpi &lt;- merge(dat.all, datFR, by = &quot;date&quot;)
 names(dat.withEpi)[9] &lt;- &quot;weekDay&quot;</code></pre>
-<p>Données TAC jusqu’au Thu 15 Jul 2021 (inclus)<br />
-Données épidémio (JHU) jusqu’au Thu 15 Jul 2021 (inclus). Données épidémio (data.gouv.fr) jusqu’au Fri 16 Jul 2021 (inclus).</p>
+<p>Données TAC jusqu’au Thu 05 Aug 2021 (inclus)<br />
+Données épidémio (JHU) jusqu’au Sun 08 Aug 2021 (inclus). Données épidémio (data.gouv.fr) jusqu’au Mon 09 Aug 2021 (inclus).</p>
 <p>On utilise les données épidémio data.gouv.fr.</p>
 <div id="quelques-dates-clés" class="section level2">
 <h2>Quelques dates clés</h2>
@@ -409,6 +415,8 @@ Données épidémio (JHU) jusqu’au Thu 15 Jul 2021 (inclus). Données épidém
 # less reliable in the time interval where there were issues with duplicates
 dat.withEpi$reliableEpi &lt;- TRUE 
 idoublons &lt;- which(as.Date(dat.withEpi$date) &gt; as.Date(date_debutAg) &amp; as.Date(dat.withEpi$date) &lt;= as.Date(date_finDoublonAg))</code></pre>
+<p>Annonce du pass sanitaire</p>
+<pre class="r"><code>date_annonceMacron &lt;- &quot;2021-07-12&quot;</code></pre>
 </div>
 </div>
 <div id="plots" class="section level1">
@@ -418,7 +426,7 @@ source(&quot;commonPlot.R&quot;)</code></pre>
 <pre class="r"><code>wk &lt;- seq(min(dat.withEpi$date), max(dat.withEpi$date), by = &quot;week&quot;)
 
 plotXaxs &lt;- function(){
-  axis(1, wk, labels = as.Date(wk), las = 3, cex.axis = 0.3)
+  axis(1, wk, labels = as.Date(wk), las = 3, cex.axis = 0.4)
 }</code></pre>
 <div id="tac-registrations" class="section level2">
 <h2>TAC, registrations</h2>
@@ -428,7 +436,7 @@ plotXaxs &lt;- function(){
      xlab = &quot;date&quot;, 
      ylab = &quot;Registrations&quot;, 
      pch = 16, col = cols[dat.all$weekDay])</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
 </div>
 <div id="changes-in-number-of-registered-users-per-day" class="section level3">
 <h3>Changes in number of registered users, per day</h3>
@@ -441,7 +449,7 @@ plotXaxs &lt;- function(){
      yaxs = &quot;i&quot;)
 legend(as.Date(&quot;2020-07-01&quot;), y = 500000, legend = names(cols), col = cols, pch = 16, box.lwd = 0)
 abline(v = as.Date(&quot;2020-10-22&quot;))</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
 <p>The vertical line corresponds to the switch from StopCovid to TousAntiCovid. There was an advertisement campaign by the end of November/beginning of December, with SMS sent to the population.</p>
 </div>
 </div>
@@ -492,7 +500,7 @@ legend(as.Date(&quot;2020-07-01&quot;), y = 1000, legend = c(names(cols),  &quot
      xlab = &quot;date&quot;, 
      ylab = &quot;notifs per QR code&quot;, 
      pch = 16, col = cols[dat.all$weekDay], main = &quot;raw data, one-day delay in notifications&quot;)</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
 <ol start="3" style="list-style-type: decimal">
 <li>same day, 7-day average</li>
 </ol>
@@ -500,11 +508,11 @@ legend(as.Date(&quot;2020-07-01&quot;), y = 1000, legend = c(names(cols),  &quot
      xlab = &quot;date&quot;, 
      ylab = &quot;notifs per QRcode&quot;, 
      pch = 16, col = cols[dat.all$weekDay], main = &quot;7-day ave, same day&quot;)</code></pre>
-<p><img src="TAC_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
 <ol start="4" style="list-style-type: decimal">
 <li>one-day difference, 7-day average</li>
 </ol>
-<pre class="r"><code>par(mar = rep(5, 4))
+<pre class="r"><code>par(mar = rep(5, 4), mgp = c(2, 0.3, 0), tck = -0.01)
 colNotifsCas &lt;- &quot;#045a8d&quot;
 plot(as.Date(dat.all$date), dat.all$diffNotifPerDay.WeekAve / (c(NA, dat.all$diffQRPerDay.WeekAve[-nrow(dat.all)])), log = &quot;&quot;,      
      xlab = &quot;&quot;, 
@@ -533,7 +541,7 @@ abline(v = as.Date(date_criteres2), lty = 2)
 mtext(&quot;nvx criteres
 detection&quot;, side = 3, at = as.Date(date_criteres2), adj = 0.5, cex = cexAnnotate)
 
-mtext(&quot;Date&quot;, side = 1, line = 1.5)
+# mtext(&quot;Date&quot;, side = 1, line = 1.5)
 
 for(i in seq(0.5, 1.5, by = 0.5)){
   abline(h = i, lty = 1, col = gray(0.8), lwd = 0.4)
@@ -544,7 +552,7 @@ Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lappli
 plotXaxs()
 axis(2)
 axis(4)</code></pre>
-<p><img src="TAC_files/figure-html/NotifsPerQR-1.png" width="672" /></p>
+<p><img src="TAC_files/figure-html/NotifsPerQR-1.png" width="864" /></p>
 </div>
 </div>
 <div id="epidemic-data" class="section level2">
@@ -563,7 +571,7 @@ To estimate the number of active users, we will compare the proportion of regist
 <pre class="r"><code>par(xpd = TRUE)
 # Approximate size of the French population
 par(mar = c(5, 5, 5, 5))
-par(mgp = c(3, 0.75, 0))
+par(mgp = c(2, 0.4, 0), tck = -0.01)
 popFR &lt;- 67*10^6
 
 # Registered users, as fraction of the total popuation
@@ -574,60 +582,64 @@ propUtil &lt;- dat.withEpi$register.WeekAve / popFR
 propUtilActif &lt;- dat.withEpi$diffQRPerDay.WeekAve / dat.withEpi$P.WeekAve
 
 
-
-colActif &lt;- rgb(0.4, 0.7, 0)
+colActif &lt;- &quot;#83D905&quot;
 colRegis &lt;- gray(0.4)
-colActifPb &lt;- &quot;#b2ff52&quot;
+colActifPb &lt;- colActif#&quot;#9FA738&quot; # Simplification: ne pas montrer le donnees avec pbs doublons, car c&#39;etait de toute maniere minime
 # Flagging problems in epi data
 cols &lt;- rep(colActif, length(propUtilActif))
 cols[idoublons] &lt;- colActifPb
 
   
 cexPoints &lt;- 0.8 # Size of the dots
-ymax &lt;- ceiling(10*max(propUtil.Raw, na.rm = TRUE))/10
+ymax &lt;- 100*ceiling(10*max(propUtil.Raw, na.rm = TRUE))/10
 
-plot(dat.withEpi$date, propUtilActif, 
-     xlab = &quot;&quot;, ylab = &quot;Proportions d&#39;utilisateurs&quot;, ylim = c(0, ymax), 
+plot(dat.withEpi$date, 100*propUtilActif, 
+     xlab = &quot;&quot;, ylab = &quot;Pourcentage d&#39;utilisateurs&quot;, ylim = c(0, ymax), 
      pch = 16, col = cols, 
-       main = &quot;Fraction de la population utilisant TAC&quot;, 
+       main = &quot;Pourcentage de la population utilisant TousAntiCovid (TAC)&quot;, 
      yaxs = &quot;i&quot;, frame.plot = FALSE, cex = cexPoints,
       axes = FALSE)
-mtext(&quot;Date&quot;, side = 1, line = 1.5)
+#mtext(&quot;Date&quot;, side = 1, line = 1.5)
+plotXaxs()
 
 # Add horizontal lines to read the values
 par(xpd = FALSE)
-for(i in seq(0.05, ymax, by = 0.05)){
+for(i in seq(0.05, ymax, by = 5)){
   abline(h = i, lty = 1, col = gray(0.8), lwd = 0.4)
 }
 
 # Add points for raw users
-points(dat.withEpi$date, propUtil.Raw, pch = 16, col = colRegis, cex = cexPoints)
-
-legend(&quot;topleft&quot;, col = c(gray(0.4), colActif, colActifPb), pch = 16, 
-       legend = c(&quot;Enregistrés (brut)&quot;, &quot;Actifs (moy. 7j)&quot;, &quot;Actifs, mais pb doublons données épi&quot;), 
-       bty = &quot;o&quot;, pt.cex = cexPoints, box.lwd = 0)
-axis(4)
-axis(2)
-
-
-
+points(dat.withEpi$date, 100*propUtil.Raw, pch = 16, col = colRegis, cex = cexPoints)
 
 par(xpd = FALSE)
 
 # Annotate with dates
-abline(v = as.Date(date_TAC), lty = 2)
-abline(v = as.Date(date_sms), lty = 2)
 cexAnnotate &lt;- 0.8
 dx &lt;- 0.3
+abline(v = as.Date(date_TAC), lty = 2)
 mtext(&quot;StopCovid -&gt; 
 TousAntiCovid&quot;, side = 3, at = as.Date(date_TAC), adj = 1-dx, cex = cexAnnotate)
 
+abline(v = as.Date(date_sms), lty = 2)
 mtext(&quot;envoi SMS 
 QR code&quot;, side = 3, at = as.Date(date_sms), adj = dx, cex = cexAnnotate)
 
+abline(v = as.Date(date_annonceMacron), lty = 2)
+mtext(&quot;annonce pass
+sanitaire&quot;, side = 3, at = as.Date(date_annonceMacron), adj = 1-dx, cex = cexAnnotate)
+
 mtext(paste0(&quot;Mise à jour : &quot;, Sys.Date(), &quot;
 Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC, 
-https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71 pour nb cas en date d&#39;annonce&quot;), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)</code></pre>
+https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71 pour nb cas en date d&#39;annonce&quot;), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)
+
+legend(&quot;topleft&quot;, col = c(gray(0.4), colActif),#, colActifPb), 
+       pch = 16, 
+       legend = c(&quot;Utilisateurs enregistrés (brut)&quot;, &quot;Traçage : Pourcentage des cas du jour 
+se signalant dans TAC (moy. 7j)&quot;), #, &quot;(qq pbs de doublons des données épidémiologiques)&quot;), 
+       pt.cex = cexPoints, box.lwd = 0, cex = 0.9, bg = gray(1, 0.7), inset = c(0, 0.05))
+
+axis(4)
+axis(2)</code></pre>
 <p><img src="TAC_files/figure-html/EstimateActiveUsers-1.png" width="672" /></p>
 </div>
 <div id="qr-codes-and-cases" class="section level2">

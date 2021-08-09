@@ -13,6 +13,8 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_knit$set(global.par = TRUE)
 
+dlData <- FALSE # Whether to download the data again (TRUE if first time of the day)
+
 #knitr::opts_chunk$set(fig.width=12, fig.height=8) 
 ```
 
@@ -35,7 +37,9 @@ URL <- "https://www.data.gouv.fr/fr/datasets/r/0e2168ec-24c7-4b49-a900-c7dd12f8e
 # Download and read data
 today <- Sys.Date() # today's date
 dataFile <- paste0("data/TAC_", today, ".csv") # name file with today's date
-download.file(URL, dataFile) # download file from repo
+if(dlData){
+  download.file(URL, dataFile) # download file from repo
+}
 dat <- read.csv(dataFile)
 
 ## Description from the website (2020-12-23)
@@ -97,7 +101,9 @@ dat.all$date <- as.Date(dat.all$date)
 URL <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"
 # Download and read data
 dataFile <- paste0("data/JHU_cases_all_", today, ".csv") # name file with today's date
-download.file(URL, dataFile) # download file from repo
+if(dlData){
+  download.file(URL, dataFile) # download file from repo
+}
 datJHU <- read.csv(dataFile, header = TRUE, check.names = FALSE)
 # Extract data about France
 datJHU.France <- datJHU[datJHU$`Country/Region` == "France", ]
@@ -128,7 +134,9 @@ datJHUFr$P.WeekAve <- sliding.ave(datJHUFr$P, winwdt = 7, pos = 4, na.rm = TRUE)
 URL <- "https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71"
 # Download and read data
 dataFile <- paste0("data/FR_cases_all_", today, ".csv") # name file with today's date
-download.file(URL, dataFile) # download file from repo
+if(dlData){
+  download.file(URL, dataFile) # download file from repo
+}
 datFR <- read.csv(dataFile, header = TRUE, check.names = FALSE)
 datFR$date <- as.Date(datFR$date)
 
@@ -218,6 +226,12 @@ dat.withEpi$reliableEpi <- TRUE
 idoublons <- which(as.Date(dat.withEpi$date) > as.Date(date_debutAg) & as.Date(dat.withEpi$date) <= as.Date(date_finDoublonAg))
 ```
 
+Annonce du pass sanitaire
+
+```{r}
+date_annonceMacron <- "2021-07-12"
+```
+
 
 # Plots
 
@@ -230,7 +244,7 @@ source("commonPlot.R")
 wk <- seq(min(dat.withEpi$date), max(dat.withEpi$date), by = "week")
 
 plotXaxs <- function(){
-  axis(1, wk, labels = as.Date(wk), las = 3, cex.axis = 0.3)
+  axis(1, wk, labels = as.Date(wk), las = 3, cex.axis = 0.4)
 }
 ```
 
@@ -323,8 +337,9 @@ plot(as.Date(dat.all$date), dat.all$diffNotifPerDay.WeekAve / dat.all$diffQRPerD
 ```
 
 4) one-day difference, 7-day average
-```{r NotifsPerQR}
-par(mar = rep(5, 4))
+
+```{r NotifsPerQR, fig.width=9, fig.height=6}
+par(mar = rep(5, 4), mgp = c(2, 0.3, 0), tck = -0.01)
 colNotifsCas <- "#045a8d"
 plot(as.Date(dat.all$date), dat.all$diffNotifPerDay.WeekAve / (c(NA, dat.all$diffQRPerDay.WeekAve[-nrow(dat.all)])), log = "",      
      xlab = "", 
@@ -353,7 +368,7 @@ abline(v = as.Date(date_criteres2), lty = 2)
 mtext("nvx criteres
 detection", side = 3, at = as.Date(date_criteres2), adj = 0.5, cex = cexAnnotate)
 
-mtext("Date", side = 1, line = 1.5)
+# mtext("Date", side = 1, line = 1.5)
 
 for(i in seq(0.5, 1.5, by = 0.5)){
   abline(h = i, lty = 1, col = gray(0.8), lwd = 0.4)
@@ -382,11 +397,11 @@ legend(as.Date("2020-07-01"), y = 65000, legend = c(names(cols),  "7-day average
 Not all users are active; some people have downloaded the app but do not turn on bluetooth; some may just have downloaded the app for their "attestations".  
 To estimate the number of active users, we will compare the proportion of registered users in the whole population to the proportion of scanned QR codes among positive test results. 
 
-```{r EstimateActiveUsers}
+```{r EstimateActiveUsers, fig.width=7, fig.height=5}
 par(xpd = TRUE)
 # Approximate size of the French population
 par(mar = c(5, 5, 5, 5))
-par(mgp = c(3, 0.75, 0))
+par(mgp = c(2, 0.4, 0), tck = -0.01)
 popFR <- 67*10^6
 
 # Registered users, as fraction of the total popuation
@@ -397,60 +412,65 @@ propUtil <- dat.withEpi$register.WeekAve / popFR
 propUtilActif <- dat.withEpi$diffQRPerDay.WeekAve / dat.withEpi$P.WeekAve
 
 
-
-colActif <- rgb(0.4, 0.7, 0)
+colActif <- "#83D905"
 colRegis <- gray(0.4)
-colActifPb <- "#b2ff52"
+colActifPb <- colActif#"#9FA738" # Simplification: ne pas montrer le donnees avec pbs doublons, car c'etait de toute maniere minime
 # Flagging problems in epi data
 cols <- rep(colActif, length(propUtilActif))
 cols[idoublons] <- colActifPb
 
   
 cexPoints <- 0.8 # Size of the dots
-ymax <- ceiling(10*max(propUtil.Raw, na.rm = TRUE))/10
+ymax <- 100*ceiling(10*max(propUtil.Raw, na.rm = TRUE))/10
 
-plot(dat.withEpi$date, propUtilActif, 
-     xlab = "", ylab = "Proportions d'utilisateurs", ylim = c(0, ymax), 
+plot(dat.withEpi$date, 100*propUtilActif, 
+     xlab = "", ylab = "Pourcentage d'utilisateurs", ylim = c(0, ymax), 
      pch = 16, col = cols, 
-       main = "Fraction de la population utilisant TAC", 
+       main = "Pourcentage de la population utilisant TousAntiCovid (TAC)", 
      yaxs = "i", frame.plot = FALSE, cex = cexPoints,
       axes = FALSE)
-mtext("Date", side = 1, line = 1.5)
+#mtext("Date", side = 1, line = 1.5)
+plotXaxs()
 
 # Add horizontal lines to read the values
 par(xpd = FALSE)
-for(i in seq(0.05, ymax, by = 0.05)){
+for(i in seq(0.05, ymax, by = 5)){
   abline(h = i, lty = 1, col = gray(0.8), lwd = 0.4)
 }
 
 # Add points for raw users
-points(dat.withEpi$date, propUtil.Raw, pch = 16, col = colRegis, cex = cexPoints)
-
-legend("topleft", col = c(gray(0.4), colActif, colActifPb), pch = 16, 
-       legend = c("Enregistrés (brut)", "Actifs (moy. 7j)", "Actifs, mais pb doublons données épi"), 
-       bty = "o", pt.cex = cexPoints, box.lwd = 0)
-axis(4)
-axis(2)
-
-
-
+points(dat.withEpi$date, 100*propUtil.Raw, pch = 16, col = colRegis, cex = cexPoints)
 
 par(xpd = FALSE)
 
 # Annotate with dates
-abline(v = as.Date(date_TAC), lty = 2)
-abline(v = as.Date(date_sms), lty = 2)
 cexAnnotate <- 0.8
 dx <- 0.3
+abline(v = as.Date(date_TAC), lty = 2)
 mtext("StopCovid -> 
 TousAntiCovid", side = 3, at = as.Date(date_TAC), adj = 1-dx, cex = cexAnnotate)
 
+abline(v = as.Date(date_sms), lty = 2)
 mtext("envoi SMS 
 QR code", side = 3, at = as.Date(date_sms), adj = dx, cex = cexAnnotate)
+
+abline(v = as.Date(date_annonceMacron), lty = 2)
+mtext("annonce pass
+sanitaire", side = 3, at = as.Date(date_annonceMacron), adj = 1-dx, cex = cexAnnotate)
 
 mtext(paste0("Mise à jour : ", Sys.Date(), "
 Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC, 
 https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71 pour nb cas en date d'annonce"), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)
+
+legend("topleft", col = c(gray(0.4), colActif),#, colActifPb), 
+       pch = 16, 
+       legend = c("Utilisateurs enregistrés (brut)", "Traçage : Pourcentage des cas du jour 
+se signalant dans TAC (moy. 7j)"), #, "(qq pbs de doublons des données épidémiologiques)"), 
+       pt.cex = cexPoints, box.lwd = 0, cex = 0.9, bg = gray(1, 0.7), inset = c(0, 0.05))
+
+axis(4)
+axis(2)
+
 ```
 
 ## QR codes and cases
