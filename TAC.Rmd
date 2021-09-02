@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_knit$set(global.par = TRUE)
 
-dlData <- FALSE # Whether to download the data again (TRUE if first time of the day)
+dlData <- TRUE # Whether to download the data again (TRUE if first time of the day)
 
 #knitr::opts_chunk$set(fig.width=12, fig.height=8) 
 ```
@@ -564,7 +564,7 @@ for(i in seq(0, 65, by = 5)){
 
 # Annotate with dates
 abline(v = as.Date(date_TAC), lty = 2)
-cexAnnotate <- 0.8
+cexAnnotate <- 0.6
 mtext("StopCovid -> 
 TousAntiCovid", side = 3, at = as.Date(date_TAC), adj = 1, cex = cexAnnotate)
 
@@ -589,17 +589,19 @@ points(as.Date(dat.all$date), notifsPerQR.raw.decalage/prop.util(propUtil.Raw), 
 par(xpd = FALSE)
 
 
-legend("topleft", col = c("white", colActif, colActifPb, colRegis, "white"), pch = 16, 
-       legend = c("prop. utilisateurs ", "Actifs", "Actifs, données avec pb doublons", "Enregistrés"), 
+legend("topleft", col = c("white", colActif, #colActifPb, 
+                          colRegis, "white"), pch = 16, 
+       legend = c("prop. utilisateurs ", "Actifs", #"Actifs, données avec pb doublons", 
+                  "Enregistrés"), 
        box.lwd = 0, bg = gray(0, 0))
 
 
-mtext("Date", side = 1, line = 1.5)
+mtext("", side = 1, line = 1.5)
 
 mtext(paste0("Mise à jour : ", Sys.Date(), "
 Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC, 
 https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71 
-pour nb cas en date d'annonce"), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)
+pour nb cas en date d'annonce"), cex = 0.55, col = gray(0.3), side = 1, line = 3.75, adj = 0)
 
 ```
 

@@ -395,8 +395,8 @@ legend(&quot;topleft&quot;, col = c(1, &quot;blue&quot;), pch = c(1, 2), legend 
 <pre class="r"><code># Merge the datasets
 dat.withEpi &lt;- merge(dat.all, datFR, by = &quot;date&quot;)
 names(dat.withEpi)[9] &lt;- &quot;weekDay&quot;</code></pre>
-<p>Données TAC jusqu’au Thu 05 Aug 2021 (inclus)<br />
-Données épidémio (JHU) jusqu’au Sun 08 Aug 2021 (inclus). Données épidémio (data.gouv.fr) jusqu’au Mon 09 Aug 2021 (inclus).</p>
+<p>Données TAC jusqu’au Wed 01 Sep 2021 (inclus)<br />
+Données épidémio (JHU) jusqu’au Wed 01 Sep 2021 (inclus). Données épidémio (data.gouv.fr) jusqu’au Wed 01 Sep 2021 (inclus).</p>
 <p>On utilise les données épidémio data.gouv.fr.</p>
 <div id="quelques-dates-clés" class="section level2">
 <h2>Quelques dates clés</h2>
@@ -726,7 +726,7 @@ for(i in seq(0, 65, by = 5)){
 
 # Annotate with dates
 abline(v = as.Date(date_TAC), lty = 2)
-cexAnnotate &lt;- 0.8
+cexAnnotate &lt;- 0.6
 mtext(&quot;StopCovid -&gt; 
 TousAntiCovid&quot;, side = 3, at = as.Date(date_TAC), adj = 1, cex = cexAnnotate)
 
@@ -751,17 +751,19 @@ points(as.Date(dat.all$date), notifsPerQR.raw.decalage/prop.util(propUtil.Raw), 
 par(xpd = FALSE)
 
 
-legend(&quot;topleft&quot;, col = c(&quot;white&quot;, colActif, colActifPb, colRegis, &quot;white&quot;), pch = 16, 
-       legend = c(&quot;prop. utilisateurs &quot;, &quot;Actifs&quot;, &quot;Actifs, données avec pb doublons&quot;, &quot;Enregistrés&quot;), 
+legend(&quot;topleft&quot;, col = c(&quot;white&quot;, colActif, #colActifPb, 
+                          colRegis, &quot;white&quot;), pch = 16, 
+       legend = c(&quot;prop. utilisateurs &quot;, &quot;Actifs&quot;, #&quot;Actifs, données avec pb doublons&quot;, 
+                  &quot;Enregistrés&quot;), 
        box.lwd = 0, bg = gray(0, 0))
 
 
-mtext(&quot;Date&quot;, side = 1, line = 1.5)
+mtext(&quot;&quot;, side = 1, line = 1.5)
 
 mtext(paste0(&quot;Mise à jour : &quot;, Sys.Date(), &quot;
 Données : https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/ pour TAC, 
 https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71 
-pour nb cas en date d&#39;annonce&quot;), cex = 0.55, col = gray(0.3), side = 1, line = 3.25, adj = 0)</code></pre>
+pour nb cas en date d&#39;annonce&quot;), cex = 0.55, col = gray(0.3), side = 1, line = 3.75, adj = 0)</code></pre>
 <p><img src="TAC_files/figure-html/AppSettingsDetectedContacts-1.png" width="672" /></p>
 </div>
 </div>
