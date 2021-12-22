@@ -13,6 +13,9 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_knit$set(global.par = TRUE)
 
+knitr::opts_chunk$set(fig.width = 9, fig.height = 5.5) # Figure sizes
+
+
 dlData <- TRUE # Whether to download the data again (TRUE if first time of the day)
 
 #knitr::opts_chunk$set(fig.width=12, fig.height=8) 
@@ -338,7 +341,7 @@ plot(as.Date(dat.all$date), dat.all$diffNotifPerDay.WeekAve / dat.all$diffQRPerD
 
 4) one-day difference, 7-day average
 
-```{r NotifsPerQR, fig.width=9, fig.height=6}
+```{r NotifsPerQR}
 par(mar = rep(5, 4), mgp = c(2, 0.3, 0), tck = -0.01)
 colNotifsCas <- "#045a8d"
 plot(as.Date(dat.all$date), dat.all$diffNotifPerDay.WeekAve / (c(NA, dat.all$diffQRPerDay.WeekAve[-nrow(dat.all)])), log = "",      
@@ -397,7 +400,7 @@ legend(as.Date("2020-07-01"), y = 65000, legend = c(names(cols),  "7-day average
 Not all users are active; some people have downloaded the app but do not turn on bluetooth; some may just have downloaded the app for their "attestations".  
 To estimate the number of active users, we will compare the proportion of registered users in the whole population to the proportion of scanned QR codes among positive test results. 
 
-```{r EstimateActiveUsers, fig.width=7, fig.height=5}
+```{r EstimateActiveUsers}
 par(xpd = TRUE)
 # Approximate size of the French population
 par(mar = c(5, 5, 5, 5))
