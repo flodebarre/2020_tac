@@ -26,7 +26,7 @@ dlData <- TRUE # Whether to download the data again (TRUE if first time of the d
 -  TousAntiCovid: [open data, official source](https://www.data.gouv.fr/fr/datasets/metriques-dutilisation-de-lapplication-tousanticovid/)
 -  Epidemic data: 
    -  [JHU data](https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series), because recorded as function of date of the result's announcement. 
-   -  [data.gouv.fr](https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71), dataset which used by JHU, for which date corresponds to the date of declaration and not date of test
+   -  [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/synthese-des-indicateurs-de-suivi-de-lepidemie-covid-19/), dataset which used by JHU, for which date corresponds to the date of declaration and not date of test
 
 
 ```{r, results="hide"}
@@ -134,7 +134,7 @@ datJHUFr$P.WeekAve <- sliding.ave(datJHUFr$P, winwdt = 7, pos = 4, na.rm = TRUE)
 
 ```{r}
 # 3) French data from data.gouv.fr, which JHU uses as source
-URL <- "https://www.data.gouv.fr/en/datasets/r/d3a98a30-893f-47f7-96c5-2f4bcaaa0d71"
+URL <- "https://www.data.gouv.fr/fr/datasets/r/f335f9ea-86e3-4ffa-9684-93c009d5e617"
 # Download and read data
 dataFile <- paste0("data/FR_cases_all_", today, ".csv") # name file with today's date
 if(dlData){
@@ -147,6 +147,9 @@ datFR$date <- as.Date(datFR$date)
 datFR$weekDay <- weekdays(as.Date(datFR$date))
 # Extract data per day (dataset provides cumulative values)
 datFR$P <- c(datFR[1, "total_cas_confirmes"], diff(datFR$total_cas_confirmes))
+
+# Rename positives (for compatibiliby with old dataset)
+datFR$P <- datFR$pos
 
 # Turn negative values into NA
 # (has to be done after diff are calculated to make sure corrections are taken into account)
